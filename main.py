@@ -68,6 +68,8 @@ class LoginRequest(BaseModel):
 class FinancialItem(BaseModel):
     name: Optional[str] = ""
     amount: Optional[int] = 0
+    kind: Optional[str] = "asset"
+    rate: Optional[str] = ""
 
 class EventItem(BaseModel):
     name: Optional[str] = ""

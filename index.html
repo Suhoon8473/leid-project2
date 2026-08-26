@@ -1,0 +1,3151 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Leið — 나의 자산 안정성</title>
+
+  <!-- 카카오톡·슬랙 등의 링크 미리보기용.
+     배포 후 아래 두 URL을 실제 주소로 바꾸세요. -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Leið — 나의 자산 안정성">
+  <meta property="og:description" content="지금의 금융상태와 앞으로의 계획을 넣으면, 시간에 따른 자산 안정성을 곡선으로 보여드립니다.">
+  <meta property="og:image" content="https://example.com/leid-preview.png">
+  <meta property="og:url" content="https://example.com/">
+  <meta property="og:site_name" content="Leið">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="description" content="지금의 금융상태와 앞으로의 계획을 넣으면, 시간에 따른 자산 안정성을 곡선으로 보여드립니다.">
+  <meta name="theme-color" content="#7f97b0">
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <!-- dynamic-subset 은 글자 범위별로 파일이 쪼개져 있어, 일부만 로딩에 실패하면
+     그 글자들만 다른 글꼴로 나와 깨져 보입니다. 전체 파일 한 개로 받습니다.
+     CDN 하나가 막혀도 되도록 cdnjs · unpkg 를 예비로 둡니다. -->
+  <link rel="stylesheet" as="style" crossorigin
+    href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
+  <link rel="stylesheet" as="style" crossorigin
+    href="https://cdnjs.cloudflare.com/ajax/libs/pretendard/1.3.9/variable/pretendardvariable.min.css">
+  <style>
+    /* ============================================================
+   Leið — design tokens
+   ============================================================ */
+    :root {
+      --slate: #6E88A6;
+      --mauve: #8F8AA0;
+      --dusk: #9B8B9B;
+      --haze: #A9C6DA;
+      --cyan: #7EC9EE;
+
+      --field: #F1F1F1;
+      --field-focus: #E8E8E8;
+      --ink: #141414;
+      --ink-soft: #3D3D3D;
+      --accent: #A9CDE2;
+      --accent-hover: #93BFD8;
+      --accent-ink: #FFFFFF;
+      --danger: #C4566B;
+
+      --card: rgba(216, 233, 233, .50);
+      --card-line: rgba(255, 255, 255, .38);
+      --card-ink: #22333B;
+      --slot: rgba(255, 255, 255, .22);
+      --slot-line: rgba(255, 255, 255, .55);
+
+      --ease: cubic-bezier(.22, .61, .36, 1);
+    }
+
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+      overflow-x: hidden;
+    }
+
+    body {
+      /* Pretendard 가 못 뜨더라도 각 OS의 한글 글꼴로 자연스럽게 떨어지도록 합니다.
+     Noto Sans KR·Roboto = 안드로이드, Apple SD Gothic Neo = iOS·macOS,
+     Malgun Gothic = 윈도우, Nanum Gothic = 리눅스 */
+      font-family: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont,
+        system-ui, "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic",
+        "맑은 고딕", Roboto, "Nanum Gothic", sans-serif;
+      color: var(--ink);
+      background: #0f1720;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+      /* 한글은 어절 단위로 줄바꿈합니다. keep-all 이 없으면 '있습니다.' 의 '다.' 만
+     다음 줄로 밀려나는 식으로 끊깁니다. 끊을 곳이 없는 긴 문자열은 break-word 로 처리합니다. */
+      word-break: keep-all;
+      overflow-wrap: break-word;
+    }
+
+    button {
+      font-family: inherit;
+      cursor: pointer;
+      border: none;
+      background: none;
+    }
+
+    input {
+      font-family: inherit;
+    }
+
+    .sr {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    /* ============================================================
+   Screens
+   ============================================================ */
+    .screen {
+      display: none;
+      min-height: 100vh;
+      min-height: 100dvh;
+      flex-direction: column;
+      position: relative;
+    }
+
+    .screen.is-active {
+      display: flex;
+      animation: fade .42s var(--ease) both;
+    }
+
+    @keyframes fade {
+      from {
+        opacity: 0;
+        transform: translateY(8px);
+      }
+
+      to {
+        opacity: 1;
+        transform: none;
+      }
+    }
+
+    .mesh::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      opacity: .5;
+      mix-blend-mode: overlay;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='.4'/%3E%3C/svg%3E");
+    }
+
+    .mesh>* {
+      position: relative;
+      z-index: 1;
+    }
+
+    .mesh-a {
+      background-color: var(--slate);
+      background-image:
+        radial-gradient(120% 90% at 8% -10%, var(--mauve) 0%, rgba(143, 138, 160, 0) 55%),
+        radial-gradient(90% 80% at 92% 2%, var(--dusk) 0%, rgba(155, 139, 155, 0) 60%),
+        radial-gradient(130% 110% at 30% 78%, var(--haze) 0%, rgba(169, 198, 218, 0) 62%),
+        radial-gradient(85% 75% at 100% 88%, var(--cyan) 0%, rgba(126, 201, 238, 0) 58%),
+        linear-gradient(165deg, #7d8598 0%, #7f97b0 45%, #a2c1d6 100%);
+    }
+
+    .mesh-b {
+      background-color: #8b95a6;
+      background-image:
+        radial-gradient(110% 85% at 4% 4%, #79839a 0%, rgba(121, 131, 154, 0) 58%),
+        radial-gradient(95% 80% at 96% 0%, #9d92a4 0%, rgba(157, 146, 164, 0) 60%),
+        radial-gradient(120% 100% at 62% 96%, #aec4cd 0%, rgba(174, 196, 205, 0) 64%),
+        radial-gradient(80% 70% at 8% 92%, #94a3b8 0%, rgba(148, 163, 184, 0) 60%),
+        linear-gradient(150deg, #838da0 0%, #93a3b3 50%, #b0c4cc 100%);
+    }
+
+    .screen--paper {
+      background: #fff;
+    }
+
+    /* ============================================================
+   1 — Landing
+   ============================================================ */
+    .landing {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 60px 24px;
+    }
+
+    .wordmark {
+      font-size: clamp(52px, 7vw, 84px);
+      font-weight: 800;
+      color: #fff;
+      letter-spacing: -.03em;
+      margin: 0 0 clamp(48px, 9vh, 96px);
+      line-height: 1;
+      text-shadow: 0 2px 24px rgba(30, 50, 70, .22);
+    }
+
+    .gate {
+      display: flex;
+      flex-direction: column;
+      gap: 22px;
+      width: min(440px, 100%);
+    }
+
+    .gate__btn {
+      height: 88px;
+      border-radius: 14px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      transition: transform .25s var(--ease), box-shadow .25s var(--ease), background .25s var(--ease);
+    }
+
+    .gate__btn .ko {
+      font-size: 17px;
+      font-weight: 600;
+      letter-spacing: -.01em;
+    }
+
+    .gate__btn .en {
+      font-size: 20px;
+      font-weight: 500;
+    }
+
+    .gate__btn--solid {
+      background: linear-gradient(160deg, rgba(255, 255, 255, .62), rgba(255, 255, 255, .34));
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      border: 1px solid rgba(255, 255, 255, .5);
+      color: #3A4A5C;
+      box-shadow: 0 4px 20px rgba(40, 60, 80, .10);
+    }
+
+    .gate__btn--solid:hover {
+      background: linear-gradient(160deg, rgba(255, 255, 255, .74), rgba(255, 255, 255, .46));
+      transform: translateY(-2px);
+    }
+
+    .gate__btn--ghost {
+      border: 1px solid rgba(255, 255, 255, .85);
+      color: #fff;
+    }
+
+    .gate__btn--ghost:hover {
+      background: rgba(255, 255, 255, .13);
+      transform: translateY(-2px);
+    }
+
+    .gate__btn:active {
+      transform: translateY(0);
+    }
+
+    /* ============================================================
+   2 & 3 — Auth
+   ============================================================ */
+    .auth {
+      flex: 1;
+      padding: clamp(56px, 8vh, 100px) 9% 56px;
+    }
+
+    .auth__grid {
+      display: grid;
+      grid-template-columns: minmax(220px, 30%) 1fr;
+      gap: clamp(24px, 5vw, 70px);
+      min-height: 520px;
+    }
+
+    .auth__title {
+      margin: 0;
+      font-weight: 900;
+      letter-spacing: -.035em;
+      line-height: 1.02;
+      color: var(--ink);
+    }
+
+    .auth__title .ko {
+      display: block;
+      font-size: clamp(38px, 4.2vw, 56px);
+    }
+
+    .auth__title .en {
+      display: block;
+      font-size: clamp(40px, 4.6vw, 60px);
+    }
+
+    .auth__panel {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .fields {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .field-wrap {
+      position: relative;
+    }
+
+    .field {
+      width: 100%;
+      height: 58px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      background: var(--field);
+      padding: 0 32px;
+      font-size: 16px;
+      font-weight: 500;
+      color: var(--ink);
+      transition: background .2s var(--ease), border-color .2s var(--ease), box-shadow .2s var(--ease);
+    }
+
+    .field::placeholder {
+      color: var(--ink-soft);
+      font-weight: 500;
+    }
+
+    .field:hover {
+      background: var(--field-focus);
+    }
+
+    .field:focus {
+      outline: none;
+      background: #fff;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 4px rgba(169, 205, 226, .35);
+    }
+
+    .field.is-invalid {
+      border-color: var(--danger);
+      background: #FDF4F5;
+    }
+
+    .field.is-invalid:focus {
+      box-shadow: 0 0 0 4px rgba(196, 86, 107, .20);
+    }
+
+    .field-error {
+      display: none;
+      margin: 6px 0 0 32px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--danger);
+    }
+
+    .field-wrap.is-invalid .field-error {
+      display: block;
+    }
+
+    .field-opt {
+      position: absolute;
+      right: 26px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 12px;
+      font-weight: 700;
+      color: #9AA3A8;
+      pointer-events: none;
+      letter-spacing: -.02em;
+    }
+
+    /* 개인정보 동의 */
+    .consent {
+      margin-top: 22px;
+    }
+
+    .check {
+      display: flex;
+      align-items: flex-start;
+      gap: 11px;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .check input {
+      position: absolute;
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .check__box {
+      flex: none;
+      width: 22px;
+      height: 22px;
+      margin-top: 1px;
+      border-radius: 6px;
+      border: 1.6px solid #CFCFCF;
+      background: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      transition: background .18s var(--ease), border-color .18s var(--ease);
+    }
+
+    .check__box svg {
+      opacity: 0;
+      transform: scale(.6);
+      transition: opacity .18s var(--ease), transform .18s var(--ease);
+    }
+
+    .check input:checked+.check__box {
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+
+    .check input:checked+.check__box svg {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    .check input:focus-visible+.check__box {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    .check__text {
+      font-size: 14.5px;
+      font-weight: 500;
+      color: var(--ink-soft);
+      line-height: 1.45;
+    }
+
+    .check__text b {
+      font-weight: 700;
+      color: var(--danger);
+    }
+
+    .consent.is-invalid .check__box {
+      border-color: var(--danger);
+    }
+
+    .consent__err {
+      display: none;
+      margin: 7px 0 0 33px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--danger);
+    }
+
+    .consent.is-invalid .consent__err {
+      display: block;
+    }
+
+    .consent__more {
+      margin: 8px 0 0 33px;
+      padding: 0;
+      font-size: 12.5px;
+      font-weight: 600;
+      color: #8A949A;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+
+    .consent__more:hover {
+      color: var(--ink-soft);
+    }
+
+    .consent__detail {
+      margin: 11px 0 0 33px;
+      padding: 14px 16px;
+      border-radius: 10px;
+      background: #F7F8F9;
+      border: 1px solid #EAECEE;
+    }
+
+    .consent__detail p {
+      margin: 0 0 6px;
+      font-size: 12.5px;
+      font-weight: 500;
+      color: #5C666C;
+      line-height: 1.5;
+    }
+
+    .consent__detail p:last-child {
+      margin-bottom: 0;
+    }
+
+    .consent__detail b {
+      font-weight: 700;
+      color: var(--ink-soft);
+    }
+
+    .auth__actions {
+      margin-top: auto;
+      padding-top: 40px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 14px;
+    }
+
+    .form-alert {
+      display: none;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--danger);
+      background: #FDF4F5;
+      border: 1px solid #F0D6DB;
+      border-radius: 10px;
+      padding: 11px 18px;
+    }
+
+    .form-alert.is-on {
+      display: block;
+      animation: shake .32s var(--ease);
+    }
+
+    @keyframes shake {
+
+      0%,
+      100% {
+        transform: translateX(0);
+      }
+
+      25% {
+        transform: translateX(-5px);
+      }
+
+      75% {
+        transform: translateX(5px);
+      }
+    }
+
+    .submit {
+      min-width: 200px;
+      height: 52px;
+      border-radius: 12px;
+      background: var(--accent);
+      color: var(--accent-ink);
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: .02em;
+      transition: background .2s var(--ease), transform .2s var(--ease);
+    }
+
+    .submit:hover {
+      background: var(--accent-hover);
+      transform: translateY(-1px);
+    }
+
+    .submit:active {
+      transform: translateY(0);
+    }
+
+    /* 뒤로가기 */
+    .action-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      gap: 12px;
+    }
+
+    .nav-back {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: background .2s var(--ease), border-color .2s var(--ease), color .2s var(--ease), transform .2s var(--ease);
+    }
+
+    .nav-back svg {
+      flex: none;
+      transition: transform .2s var(--ease);
+    }
+
+    .nav-back:hover svg {
+      transform: translateX(-3px);
+    }
+
+    .nav-back:active {
+      transform: translateY(1px);
+    }
+
+    .nav-back--plain {
+      height: 52px;
+      padding: 0 22px 0 18px;
+      border-radius: 12px;
+      background: transparent;
+      border: 1px solid #DCDCDC;
+      color: var(--ink-soft);
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: -.01em;
+    }
+
+    .nav-back--plain:hover {
+      background: #F5F5F5;
+      border-color: #BFBFBF;
+      color: var(--ink);
+    }
+
+    .nav-back--glass {
+      height: 38px;
+      padding: 0 18px 0 14px;
+      border-radius: 6px;
+      background: rgba(255, 255, 255, .26);
+      border: 1px solid rgba(255, 255, 255, .58);
+      color: #1a2b33;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: -.01em;
+    }
+
+    .nav-back--glass:hover {
+      background: rgba(255, 255, 255, .44);
+    }
+
+    /* ============================================================
+   4 & 5 — Glass card screens
+   ============================================================ */
+    .panel {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: clamp(32px, 5vh, 64px) 24px;
+    }
+
+    .panel__inner {
+      width: min(860px, 100%);
+      margin-block: auto;
+      position: relative;
+      z-index: 2;
+    }
+
+    .panel__head {
+      text-align: center;
+      margin-bottom: 22px;
+    }
+
+    .panel__brand {
+      display: block;
+      font-size: 22px;
+      font-weight: 800;
+      color: #fff;
+      letter-spacing: -.02em;
+      margin-bottom: 2px;
+      text-shadow: 0 2px 10px rgba(30, 45, 60, .25);
+    }
+
+    .panel__title {
+      margin: 0;
+      font-size: clamp(28px, 3.4vw, 40px);
+      font-weight: 800;
+      color: #fff;
+      letter-spacing: -.03em;
+      text-shadow: 0 2px 14px rgba(30, 45, 60, .28);
+    }
+
+    .panel__note {
+      margin: 8px 0 0;
+      font-size: 13px;
+      font-weight: 600;
+      color: rgba(255, 255, 255, .86);
+      letter-spacing: -.01em;
+    }
+
+    .panel__note--sub {
+      display: inline-block;
+      margin-top: 5px;
+      font-size: 12px;
+      font-weight: 500;
+      color: rgba(255, 255, 255, .72);
+    }
+
+    .panel__note--sub b {
+      font-weight: 700;
+      color: rgba(255, 255, 255, .95);
+    }
+
+    /* 진행 단계 */
+    .steps {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 5px;
+      margin-top: 15px;
+    }
+
+    .steps__item {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 5px 11px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: -.025em;
+      white-space: nowrap;
+      color: rgba(255, 255, 255, .58);
+      border: 1px solid transparent;
+      transition: background .2s var(--ease), color .2s var(--ease);
+    }
+
+    /* 원문자(①)는 글꼴에 따라 네모로 깨져서, 원은 CSS로 그리고 숫자만 넣습니다 */
+    .steps__n {
+      flex: none;
+      width: 15px;
+      height: 15px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid currentColor;
+      font-size: 9.5px;
+      font-weight: 700;
+      line-height: 1;
+      letter-spacing: 0;
+      font-feature-settings: "tnum";
+    }
+
+    .steps__item.is-now .steps__n {
+      background: #1c2f38;
+      color: #fff;
+      border-color: #1c2f38;
+    }
+
+    .steps__item.is-done {
+      color: rgba(255, 255, 255, .8);
+    }
+
+    .steps__item.is-now {
+      color: #1c2f38;
+      background: rgba(255, 255, 255, .62);
+      border-color: rgba(255, 255, 255, .7);
+      font-weight: 700;
+      box-shadow: 0 1px 6px rgba(30, 50, 70, .12);
+    }
+
+    .steps__sep {
+      color: rgba(255, 255, 255, .4);
+      font-size: 10px;
+      line-height: 1;
+    }
+
+    /* 안정성 지수 설명 */
+    .info-btn {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      margin-left: 7px;
+      vertical-align: middle;
+      border: 1px solid rgba(255, 255, 255, .55);
+      color: rgba(255, 255, 255, .9);
+      font-size: 11px;
+      font-weight: 700;
+      font-style: normal;
+      line-height: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: background .2s var(--ease), border-color .2s var(--ease);
+    }
+
+    .info-btn:hover,
+    .info-btn[aria-expanded="true"] {
+      background: rgba(255, 255, 255, .3);
+      border-color: rgba(255, 255, 255, .8);
+    }
+
+    .info-pop {
+      margin-top: 12px;
+      padding: 14px 16px;
+      border-radius: 13px;
+      max-width: 460px;
+      background: rgba(255, 255, 255, .46);
+      border: 1px solid rgba(255, 255, 255, .6);
+      animation: softDrop .24s var(--ease) both;
+    }
+
+    .info-pop[hidden] {
+      display: none;
+    }
+
+    @keyframes softDrop {
+      from {
+        opacity: 0;
+        transform: translateY(-5px);
+      }
+
+      to {
+        opacity: 1;
+        transform: none;
+      }
+    }
+
+    .info-pop h4 {
+      margin: 0 0 6px;
+      font-size: 13px;
+      font-weight: 800;
+      color: #1c2f38;
+      letter-spacing: -.02em;
+    }
+
+    .info-pop p {
+      margin: 0;
+      font-size: 12.5px;
+      font-weight: 500;
+      color: var(--card-ink);
+      line-height: 1.65;
+    }
+
+    .info-pop p+p {
+      margin-top: 6px;
+      opacity: .82;
+    }
+
+    /* 구역 구분 */
+    .sec-label {
+      display: block;
+      margin: 22px 0 10px;
+      padding-top: 16px;
+      border-top: 1px solid rgba(255, 255, 255, .28);
+      font-size: 11.5px;
+      font-weight: 700;
+      letter-spacing: .06em;
+      color: rgba(255, 255, 255, .72);
+    }
+
+    /* Leið의 분석 */
+    .analysis {
+      margin-top: 22px;
+      padding-top: 16px;
+      border-top: 1px solid rgba(255, 255, 255, .28);
+    }
+
+    .analysis__title {
+      margin: 0 0 9px;
+      font-size: 13.5px;
+      font-weight: 800;
+      color: #1c2f38;
+      letter-spacing: -.02em;
+    }
+
+    .analysis__body p {
+      margin: 0;
+      font-size: 13.5px;
+      font-weight: 500;
+      color: var(--card-ink);
+      line-height: 1.72;
+      letter-spacing: -.01em;
+    }
+
+    .analysis__body p+p {
+      margin-top: 7px;
+    }
+
+    .card {
+      background: var(--card);
+      backdrop-filter: blur(16px) saturate(115%);
+      -webkit-backdrop-filter: blur(16px) saturate(115%);
+      border: 1px solid var(--card-line);
+      border-radius: 30px;
+      padding: clamp(26px, 3.6vw, 40px) clamp(22px, 3.2vw, 38px);
+      box-shadow: 0 12px 40px rgba(40, 60, 80, .13);
+    }
+
+    .rows {
+      display: flex;
+      flex-direction: column;
+      gap: 13px;
+    }
+
+    .row {
+      display: grid;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .row--pair {
+      grid-template-columns: 132px 200px 1fr 84px auto;
+    }
+
+    .row--triple {
+      grid-template-columns: 150px 1fr 1fr auto;
+    }
+
+    .row-head {
+      display: grid;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+
+    .row-head--pair {
+      grid-template-columns: 132px 200px 1fr 84px auto;
+    }
+
+    .row-head--triple {
+      grid-template-columns: 150px 1fr 1fr auto;
+    }
+
+    .row-head span {
+      text-align: center;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--card-ink);
+      letter-spacing: -.01em;
+    }
+
+    .row-head .spacer {
+      width: 30px;
+    }
+
+    .tag {
+      height: 42px;
+      border-radius: 8px;
+      background: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 700;
+      color: #1a1a1a;
+      letter-spacing: -.02em;
+      box-shadow: 0 1px 3px rgba(40, 60, 80, .10);
+    }
+
+    .tag--sample {
+      background: rgba(255, 255, 255, .72);
+      color: #4A5A64;
+    }
+
+    .tag-input {
+      height: 42px;
+      width: 100%;
+      border-radius: 8px;
+      background: #fff;
+      border: 1px solid transparent;
+      text-align: center;
+      font-size: 14px;
+      font-weight: 700;
+      color: #1a1a1a;
+      letter-spacing: -.02em;
+      box-shadow: 0 1px 3px rgba(40, 60, 80, .10);
+      transition: border-color .2s var(--ease), box-shadow .2s var(--ease);
+    }
+
+    .tag-input::placeholder {
+      color: #9AA7AE;
+      font-weight: 600;
+    }
+
+    .tag-input:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(255, 255, 255, .5);
+    }
+
+    .slot {
+      height: 42px;
+      width: 100%;
+      border-radius: 8px;
+      background: var(--slot);
+      border: 1px solid var(--slot-line);
+      text-align: center;
+      font-size: 14px;
+      font-weight: 500;
+      color: #1e2f38;
+      transition: background .2s var(--ease), border-color .2s var(--ease), box-shadow .2s var(--ease);
+    }
+
+    .slot::placeholder {
+      color: rgba(45, 70, 85, .5);
+      font-weight: 500;
+    }
+
+    .slot:hover {
+      background: rgba(255, 255, 255, .32);
+    }
+
+    .slot:focus {
+      outline: none;
+      background: rgba(255, 255, 255, .62);
+      border-color: #fff;
+      box-shadow: 0 0 0 3px rgba(255, 255, 255, .32);
+    }
+
+    /* 항목 종류 선택 */
+    .kind {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 2px;
+      height: 42px;
+      padding: 3px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, .18);
+      border: 1px solid var(--slot-line);
+    }
+
+    .kind__opt {
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: -.05em;
+      color: rgba(30, 47, 56, .6);
+      white-space: nowrap;
+      padding: 0;
+      transition: background .18s var(--ease), color .18s var(--ease);
+    }
+
+    /* 연 이자율 */
+    .rate {
+      height: 42px;
+      width: 100%;
+      border-radius: 8px;
+      background: var(--slot);
+      border: 1px solid var(--slot-line);
+      text-align: center;
+      font-size: 13px;
+      font-weight: 600;
+      color: #1e2f38;
+      transition: background .2s var(--ease), border-color .2s var(--ease), box-shadow .2s var(--ease);
+    }
+
+    .rate::placeholder {
+      color: rgba(45, 70, 85, .45);
+      font-weight: 500;
+    }
+
+    .rate:hover:not(:disabled) {
+      background: rgba(255, 255, 255, .32);
+    }
+
+    .rate:focus {
+      outline: none;
+      background: rgba(255, 255, 255, .62);
+      border-color: #fff;
+      box-shadow: 0 0 0 3px rgba(255, 255, 255, .32);
+    }
+
+    .rate:disabled {
+      background: rgba(255, 255, 255, .07);
+      border-style: dashed;
+      border-color: rgba(255, 255, 255, .32);
+      color: rgba(30, 47, 56, .28);
+      cursor: not-allowed;
+    }
+
+    .kind__opt:hover {
+      background: rgba(255, 255, 255, .34);
+      color: #1a2b33;
+    }
+
+    .kind__opt.is-on {
+      background: #fff;
+      color: #1a2b33;
+      box-shadow: 0 1px 3px rgba(40, 60, 80, .16);
+    }
+
+    .kind--static {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 42px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: -.03em;
+      color: rgba(30, 47, 56, .5);
+    }
+
+    .row-remove {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: rgba(34, 51, 59, .55);
+      font-size: 17px;
+      line-height: 1;
+      transition: background .2s var(--ease), color .2s var(--ease);
+    }
+
+    .row-remove:hover {
+      background: rgba(255, 255, 255, .42);
+      color: var(--danger);
+    }
+
+    .row--fixed .row-remove {
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    .empty-note {
+      padding: 22px 16px;
+      text-align: center;
+      font-size: 13.5px;
+      font-weight: 600;
+      color: rgba(30, 47, 56, .62);
+      letter-spacing: -.01em;
+      line-height: 1.6;
+    }
+
+    .add-wrap {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .add-btn {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      flex: none;
+      background: #fff;
+      color: #31505F;
+      font-size: 24px;
+      font-weight: 400;
+      line-height: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 8px rgba(40, 60, 80, .16);
+      transition: transform .22s var(--ease), box-shadow .22s var(--ease), opacity .22s var(--ease);
+    }
+
+    .add-btn:hover:not(:disabled) {
+      transform: scale(1.09) rotate(90deg);
+      box-shadow: 0 4px 14px rgba(40, 60, 80, .24);
+    }
+
+    .add-btn:active:not(:disabled) {
+      transform: scale(1);
+    }
+
+    .add-btn:disabled {
+      opacity: .35;
+      cursor: not-allowed;
+    }
+
+    .add-hint {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--card-ink);
+      opacity: .8;
+      letter-spacing: -.01em;
+    }
+
+    .panel__actions {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 20px;
+      gap: 10px;
+    }
+
+    .panel__actions--split {
+      justify-content: space-between;
+    }
+
+    .action-group {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .done {
+      min-width: 110px;
+      height: 38px;
+      padding: 0 18px;
+      border-radius: 6px;
+      background: #fff;
+      font-size: 13px;
+      font-weight: 700;
+      color: #1a1a1a;
+      letter-spacing: -.01em;
+      white-space: nowrap;
+      box-shadow: 0 2px 8px rgba(40, 60, 80, .16);
+      transition: transform .2s var(--ease), box-shadow .2s var(--ease);
+    }
+
+    .done:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 14px rgba(40, 60, 80, .22);
+    }
+
+    .done:active {
+      transform: translateY(0);
+    }
+
+    .ghost-btn {
+      min-width: 110px;
+      height: 38px;
+      border-radius: 6px;
+      background: rgba(255, 255, 255, .26);
+      border: 1px solid rgba(255, 255, 255, .58);
+      font-size: 13px;
+      font-weight: 700;
+      color: #1a2b33;
+      transition: background .2s var(--ease);
+    }
+
+    .ghost-btn:hover {
+      background: rgba(255, 255, 255, .44);
+    }
+
+    /* ============================================================
+   확인 대화상자
+   ============================================================ */
+    .modal {
+      position: fixed;
+      inset: 0;
+      z-index: 80;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .modal[hidden] {
+      display: none;
+    }
+
+    .modal__backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(28, 44, 56, .42);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+      animation: fadeIn .22s var(--ease) both;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+      }
+
+      to {
+        opacity: 1;
+      }
+    }
+
+    .modal__box {
+      position: relative;
+      width: min(420px, 100%);
+      background: #fff;
+      border-radius: 20px;
+      padding: 30px 30px 24px;
+      box-shadow: 0 24px 60px rgba(20, 40, 55, .32);
+      animation: pop .26s var(--ease) both;
+    }
+
+    @keyframes pop {
+      from {
+        opacity: 0;
+        transform: translateY(14px) scale(.97);
+      }
+
+      to {
+        opacity: 1;
+        transform: none;
+      }
+    }
+
+    .modal__title {
+      margin: 0 0 9px;
+      font-size: 19px;
+      font-weight: 800;
+      color: var(--ink);
+      letter-spacing: -.025em;
+    }
+
+    .modal__desc {
+      margin: 0;
+      font-size: 14.5px;
+      font-weight: 500;
+      color: #54606A;
+      line-height: 1.6;
+    }
+
+    .modal__list {
+      margin: 14px 0 0;
+      padding: 12px 15px;
+      border-radius: 10px;
+      background: #F6F8F9;
+      font-size: 13px;
+      font-weight: 600;
+      color: #5C686F;
+      line-height: 1.65;
+    }
+
+    .modal__actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 22px;
+    }
+
+    .modal__btn {
+      flex: 1;
+      height: 48px;
+      border-radius: 11px;
+      font-size: 14.5px;
+      font-weight: 700;
+      letter-spacing: -.01em;
+      transition: background .2s var(--ease), border-color .2s var(--ease);
+    }
+
+    .modal__btn--ghost {
+      background: #fff;
+      border: 1px solid #DCDCDC;
+      color: var(--ink-soft);
+    }
+
+    .modal__btn--ghost:hover {
+      background: #F5F5F5;
+      border-color: #BFBFBF;
+    }
+
+    .modal__btn--solid {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .modal__btn--solid:hover {
+      background: var(--accent-hover);
+    }
+
+    .modal__btn--danger {
+      background: var(--danger);
+      color: #fff;
+    }
+
+    .modal__btn--danger:hover {
+      background: #AE4B5E;
+    }
+
+    /* ============================================================
+   6 — Stability curve
+   ============================================================ */
+    .chart-card {
+      padding: clamp(24px, 3.2vw, 34px) clamp(20px, 3vw, 32px) clamp(18px, 2.4vw, 26px);
+    }
+
+    .chart-top {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 20px;
+      flex-wrap: wrap;
+      margin-bottom: 6px;
+    }
+
+    .score {
+      display: flex;
+      align-items: baseline;
+      gap: 9px;
+    }
+
+    .score__num {
+      font-size: clamp(42px, 5.4vw, 60px);
+      font-weight: 800;
+      color: #fff;
+      letter-spacing: -.04em;
+      line-height: 1;
+      text-shadow: 0 2px 14px rgba(30, 45, 60, .3);
+    }
+
+    .score__unit {
+      font-size: 15px;
+      font-weight: 700;
+      color: rgba(255, 255, 255, .82);
+    }
+
+    .score__label {
+      display: block;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      color: rgba(255, 255, 255, .72);
+      margin-bottom: 7px;
+    }
+
+    .verdict {
+      text-align: right;
+    }
+
+    .verdict__tag {
+      display: inline-block;
+      padding: 6px 15px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, .3);
+      border: 1px solid rgba(255, 255, 255, .55);
+      font-size: 13px;
+      font-weight: 700;
+      color: #1c2f38;
+    }
+
+    .verdict__sub {
+      margin: 7px 0 0;
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--card-ink);
+      opacity: .85;
+      max-width: 330px;
+      line-height: 1.55;
+      text-wrap: pretty;
+    }
+
+    .chart {
+      width: 100%;
+      height: auto;
+      display: block;
+      margin-top: 4px;
+      overflow: visible;
+    }
+
+    .chart-line {
+      fill: none;
+      stroke: #fff;
+      stroke-width: 2.6;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      filter: drop-shadow(0 3px 8px rgba(30, 50, 70, .28));
+    }
+
+    .chart-grid {
+      stroke: rgba(255, 255, 255, .24);
+      stroke-width: 1;
+    }
+
+    .chart-grid--mid {
+      stroke-dasharray: 3 6;
+    }
+
+    .chart-axis {
+      fill: rgba(28, 47, 56, .62);
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .chart-ylab {
+      fill: rgba(28, 47, 56, .55);
+      font-size: 10.5px;
+      font-weight: 700;
+      letter-spacing: .04em;
+    }
+
+    .evt-dot {
+      fill: #fff;
+      stroke: rgba(60, 95, 120, .35);
+      stroke-width: 1.5;
+    }
+
+    .evt-stem {
+      stroke: rgba(255, 255, 255, .5);
+      stroke-width: 1;
+      stroke-dasharray: 2 4;
+    }
+
+    .evt-name {
+      fill: #1c2f38;
+      font-size: 10.5px;
+      font-weight: 700;
+      letter-spacing: -.01em;
+    }
+
+    .chart-empty {
+      fill: rgba(28, 47, 56, .62);
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .draw-in {
+      stroke-dasharray: var(--len);
+      stroke-dashoffset: var(--len);
+      animation: draw 1.5s var(--ease) .18s forwards;
+    }
+
+    @keyframes draw {
+      to {
+        stroke-dashoffset: 0;
+      }
+    }
+
+    .fade-in {
+      opacity: 0;
+      animation: softIn .6s var(--ease) 1.1s forwards;
+    }
+
+    @keyframes softIn {
+      to {
+        opacity: 1;
+      }
+    }
+
+    .readout {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+
+    .readout__cell {
+      text-align: center;
+    }
+
+    .readout__k {
+      display: block;
+      font-size: 11.5px;
+      font-weight: 700;
+      color: var(--card-ink);
+      opacity: .72;
+      letter-spacing: -.01em;
+      margin-bottom: 4px;
+    }
+
+    .readout__v {
+      display: block;
+      font-size: 16px;
+      font-weight: 800;
+      color: #1c2f38;
+      letter-spacing: -.02em;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* ============================================================
+   그래프 이벤트 말풍선 (Tooltip)
+   ============================================================ */
+    #chart-tooltip {
+      position: fixed;
+      background: rgba(28, 47, 56, 0.95);
+      color: #fff;
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-size: 12.5px;
+      font-weight: 500;
+      line-height: 1.6;
+      pointer-events: none;
+      z-index: 1000;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+      transition: opacity 0.15s var(--ease);
+      opacity: 0;
+      white-space: pre-line;
+      backdrop-filter: blur(4px);
+    }
+
+    #chart-tooltip strong {
+      color: var(--cyan);
+      font-weight: 700;
+    }
+
+    /* ============================================================
+   A11y + responsive
+   ============================================================ */
+    :focus-visible {
+      outline: 2px solid #fff;
+      outline-offset: 3px;
+    }
+
+    .screen--paper :focus-visible {
+      outline-color: var(--accent);
+    }
+
+    @media (min-width:861px) and (max-height:920px) {
+      .rows {
+        gap: 10px;
+      }
+
+      .tag,
+      .slot,
+      .tag-input,
+      .kind,
+      .kind--static,
+      .rate {
+        height: 38px;
+      }
+
+      .card {
+        padding: 24px 30px;
+        border-radius: 24px;
+      }
+
+      .panel__head {
+        margin-bottom: 16px;
+      }
+
+      .add-wrap {
+        margin-top: 14px;
+      }
+
+      .add-btn {
+        width: 38px;
+        height: 38px;
+        font-size: 21px;
+      }
+    }
+
+    @media (max-width:860px) {
+      .auth {
+        padding: 52px 7% 44px;
+      }
+
+      .auth__grid {
+        grid-template-columns: 1fr;
+        gap: 32px;
+        min-height: 0;
+      }
+
+      .auth__actions {
+        padding-top: 34px;
+      }
+
+      .field {
+        height: 54px;
+        padding: 0 24px;
+        font-size: 16px;
+      }
+
+      .field-error {
+        margin-left: 24px;
+      }
+
+      .field-opt {
+        right: 20px;
+      }
+
+      .row {
+        padding-bottom: 11px;
+        border-bottom: 1px solid rgba(255, 255, 255, .22);
+        position: relative;
+      }
+
+      .row:last-child {
+        border-bottom: none;
+      }
+
+      .row--pair {
+        grid-template-columns: 1fr 84px;
+        grid-template-areas: "name name" "kind kind" "amt rate";
+        gap: 7px;
+      }
+
+      .row--pair .f-name {
+        grid-area: name;
+      }
+
+      .row--pair .f-kind {
+        grid-area: kind;
+      }
+
+      .row--pair .f-amt {
+        grid-area: amt;
+      }
+
+      .row--pair .f-rate {
+        grid-area: rate;
+      }
+
+      .row--triple {
+        grid-template-columns: 1fr 1fr;
+        grid-template-areas: "name name" "year amt";
+        gap: 7px;
+      }
+
+      .row--triple .tag,
+      .row--triple .tag-input {
+        grid-area: name;
+      }
+
+      .row--triple .slot-year {
+        grid-area: year;
+      }
+
+      .row--triple .slot-amt {
+        grid-area: amt;
+      }
+
+      .row .row-remove {
+        position: absolute;
+        top: 4px;
+        right: 4px;
+        width: 26px;
+        height: 26px;
+      }
+
+      .row-head {
+        display: none;
+      }
+
+      .tag {
+        justify-content: flex-start;
+        padding: 0 14px;
+        height: 38px;
+      }
+
+      .slot {
+        text-align: left;
+        padding: 0 14px;
+      }
+
+      .gate__btn {
+        height: 76px;
+      }
+
+      .action-row {
+        gap: 10px;
+      }
+
+      .nav-back--plain {
+        height: 48px;
+        padding: 0 16px 0 13px;
+        font-size: 14px;
+      }
+
+      .action-row .submit {
+        min-width: 0;
+        flex: 1;
+        height: 48px;
+      }
+
+      .panel__actions {
+        flex-wrap: wrap;
+      }
+
+      .readout {
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+
+      .chart-top {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .verdict {
+        text-align: left;
+      }
+
+      .steps {
+        gap: 2px;
+        margin-top: 12px;
+      }
+
+      .steps__item {
+        padding: 4px 7px;
+        font-size: 10.5px;
+        letter-spacing: -.045em;
+      }
+
+      .steps__sep {
+        font-size: 9px;
+      }
+
+      .panel__actions .done {
+        min-width: 0;
+        padding: 0 13px;
+        font-size: 12.5px;
+      }
+
+      .sec-label {
+        margin: 18px 0 9px;
+        padding-top: 14px;
+        font-size: 11px;
+      }
+
+      .analysis__body p {
+        font-size: 13px;
+        line-height: 1.7;
+        word-break: keep-all;
+        overflow-wrap: anywhere;
+      }
+
+      .info-pop {
+        padding: 12px 14px;
+      }
+
+      .info-pop p {
+        font-size: 12px;
+        word-break: keep-all;
+      }
+
+      .modal__box {
+        padding: 26px 22px 20px;
+      }
+    }
+
+    @media (prefers-reduced-motion:reduce) {
+
+      *,
+      *::before,
+      *::after {
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: .01ms !important;
+      }
+
+      .draw-in {
+        stroke-dashoffset: 0;
+      }
+
+      .fade-in {
+        opacity: 1;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- ============ 1. Landing (하단 그라데이션 없음) ============ -->
+  <section class="screen mesh mesh-a is-active" id="screen-landing" aria-label="시작 화면">
+    <div class="landing">
+      <h1 class="wordmark">Leið</h1>
+      <div class="gate">
+        <button class="gate__btn gate__btn--solid" data-go="login"><span class="ko">로그인</span><span class="en">Log
+            In</span></button>
+        <button class="gate__btn gate__btn--ghost" data-go="signup"><span class="ko">회원가입</span><span class="en">Sign
+            In</span></button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 2. Log in ============ -->
+  <section class="screen screen--paper" id="screen-login" aria-label="로그인">
+    <div class="auth">
+      <div class="auth__grid">
+        <h2 class="auth__title"><span class="ko">로그인</span><span class="en">LOG IN</span></h2>
+        <div class="auth__panel">
+          <div class="fields">
+            <div class="field-wrap">
+              <label class="sr" for="login-id">아이디</label>
+              <input class="field" id="login-id" type="text" autocomplete="username" required data-name="아이디"
+                placeholder="아이디를 입력하세요.">
+              <p class="field-error">아이디를 입력하세요.</p>
+            </div>
+            <div class="field-wrap">
+              <label class="sr" for="login-pw">비밀번호</label>
+              <input class="field" id="login-pw" type="password" autocomplete="current-password" required
+                data-name="비밀번호" placeholder="비밀번호를 입력하세요.">
+              <p class="field-error">비밀번호를 입력하세요.</p>
+            </div>
+          </div>
+          <div class="auth__actions">
+            <p class="form-alert" id="login-alert" role="alert"></p>
+            <div class="action-row">
+              <button class="nav-back nav-back--plain" data-back type="button">
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4"
+                  stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M15 18l-6-6 6-6" />
+                </svg>
+                뒤로가기
+              </button>
+              <button class="submit" data-validate data-go="finance">완료</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 3. Sign in ============ -->
+  <section class="screen screen--paper" id="screen-signup" aria-label="회원가입">
+    <div class="auth">
+      <div class="auth__grid">
+        <h2 class="auth__title"><span class="ko">회원가입</span><span class="en">SIGN IN</span></h2>
+        <div class="auth__panel">
+          <div class="fields">
+            <div class="field-wrap">
+              <label class="sr" for="su-id">아이디</label>
+              <input class="field" id="su-id" type="text" autocomplete="username" required data-name="아이디"
+                placeholder="아이디를 입력하세요.">
+              <p class="field-error">아이디를 입력하세요.</p>
+            </div>
+            <div class="field-wrap">
+              <label class="sr" for="su-pw">비밀번호</label>
+              <input class="field" id="su-pw" type="password" autocomplete="new-password" required data-name="비밀번호"
+                placeholder="비밀번호를 입력하세요.">
+              <p class="field-error">비밀번호를 입력하세요.</p>
+            </div>
+            <div class="field-wrap">
+              <label class="sr" for="su-name">이름</label>
+              <input class="field" id="su-name" type="text" autocomplete="name" required data-name="이름"
+                placeholder="이름을 입력하세요.">
+              <p class="field-error">이름을 입력하세요.</p>
+            </div>
+            <div class="field-wrap">
+              <label class="sr" for="su-birth">생년월일</label>
+              <input class="field" id="su-birth" type="text" inputmode="numeric" autocomplete="bday" required
+                maxlength="10" data-birth data-name="생년월일" placeholder="생년월일을 입력하세요. (예: 1998-04-21)">
+              <p class="field-error">생년월일을 입력하세요.</p>
+            </div>
+            <div class="field-wrap">
+              <label class="sr" for="su-contact">이메일 혹은 전화번호</label>
+              <input class="field" id="su-contact" type="text" autocomplete="email" required data-no-hangul data-contact
+                data-name="이메일 혹은 전화번호" placeholder="이메일 혹은 전화번호를 입력하세요.">
+              <p class="field-error">이메일 혹은 전화번호를 입력하세요.</p>
+            </div>
+            <div class="field-wrap">
+              <label class="sr" for="su-job">직업</label>
+              <input class="field" id="su-job" type="text" data-name="직업" placeholder="직업을 입력하세요.">
+              <span class="field-opt">선택</span>
+            </div>
+          </div>
+
+          <div class="consent" id="consent">
+            <label class="check" for="su-agree">
+              <input type="checkbox" id="su-agree" data-require-check data-name="개인정보 수집 및 이용 동의">
+              <span class="check__box" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="3.4"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M20 6L9 17l-5-5" />
+                </svg>
+              </span>
+              <span class="check__text">개인정보 수집 및 이용에 동의합니다 <b>(필수)</b></span>
+            </label>
+            <p class="consent__err">개인정보 수집 및 이용에 동의해야 가입할 수 있습니다.</p>
+            <button class="consent__more" type="button" id="consent-toggle" aria-expanded="false"
+              aria-controls="consent-detail">약관 보기</button>
+            <div class="consent__detail" id="consent-detail" hidden>
+              <p><b>수집 항목</b> · 아이디, 비밀번호, 이름, 생년월일, 이메일 또는 전화번호, 직업(선택), 입력하신 금융 정보</p>
+              <p><b>이용 목적</b> · 자산 안정성 지수 산출 및 결과 제공</p>
+              <p><b>보유 기간</b> · 회원 탈퇴 시까지 보관 후 지체 없이 파기</p>
+              <p>동의를 거부할 수 있으나, 거부 시 서비스 이용이 제한됩니다.</p>
+            </div>
+          </div>
+
+          <div class="auth__actions">
+            <p class="form-alert" id="signup-alert" role="alert"></p>
+            <div class="action-row">
+              <button class="nav-back nav-back--plain" data-back type="button">
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4"
+                  stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M15 18l-6-6 6-6" />
+                </svg>
+                뒤로가기
+              </button>
+              <button class="submit" data-validate data-go="login">완료</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 4. 나의 금융상태 ============ -->
+  <section class="screen mesh mesh-b" id="screen-finance" aria-label="나의 금융상태">
+    <div class="panel">
+      <div class="panel__inner">
+        <div class="panel__head">
+          <span class="panel__brand">Leið</span>
+          <h2 class="panel__title">나의 금융상태</h2>
+          <p class="panel__note">아래는 예시입니다. + 를 눌러 나에게 맞는 항목을 추가하세요 · 금액은 만 원 단위<br>
+            <span class="panel__note--sub">저축(예금·적금)은 매달 소득에서 빠져나가므로, 순자산은 <b>이자만큼만</b> 늘어납니다</span>
+          </p>
+          <nav class="steps" aria-label="진행 단계">
+            <span class="steps__item is-done"><b class="steps__n">1</b>기본정보</span><span class="steps__sep">→</span>
+            <span class="steps__item is-now" aria-current="step"><b class="steps__n">2</b>금융상태</span><span
+              class="steps__sep">→</span>
+            <span class="steps__item"><b class="steps__n">3</b>미래계획</span><span class="steps__sep">→</span>
+            <span class="steps__item"><b class="steps__n">4</b>분석</span>
+          </nav>
+          <!-- 내 데이터 불러오기 버튼 추가 -->
+          <div style="margin-top: 16px;">
+            <button id="load-data" class="ghost-btn" style="height: 34px; font-size: 12px; padding: 0 14px;">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"
+                stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -2px; margin-right: 4px;">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+              </svg>
+              내 데이터 불러오기
+            </button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="row-head row-head--pair"><span>항목</span><span>종류</span><span>금액</span><span>연 이자·수익률</span><span
+              class="spacer"></span></div>
+          <div class="rows" id="finance-rows"></div>
+          <div class="add-wrap">
+            <button class="add-btn" id="add-finance" aria-label="항목 추가">+</button>
+            <span class="add-hint" id="finance-hint"></span>
+          </div>
+        </div>
+        <div class="panel__actions panel__actions--split">
+          <button class="nav-back nav-back--glass" data-back type="button">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.6"
+              stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M15 18l-6-6 6-6" />
+            </svg>
+            뒤로가기
+          </button>
+          <button class="done" id="finance-done">다음 단계 →</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 5. 내 생애 이벤트 타임라인 ============ -->
+  <section class="screen mesh mesh-b" id="screen-timeline" aria-label="내 생애 이벤트 타임라인">
+    <div class="panel">
+      <div class="panel__inner">
+        <div class="panel__head">
+          <span class="panel__brand">Leið</span>
+          <h2 class="panel__title">내 생애 이벤트 타임라인</h2>
+          <p class="panel__note">아래는 예시입니다. + 를 눌러 나의 계획을 추가하세요 · 금액은 만 원 단위</p>
+          <nav class="steps" aria-label="진행 단계">
+            <span class="steps__item is-done"><b class="steps__n">1</b>기본정보</span><span class="steps__sep">→</span>
+            <span class="steps__item is-done"><b class="steps__n">2</b>금융상태</span><span class="steps__sep">→</span>
+            <span class="steps__item is-now" aria-current="step"><b class="steps__n">3</b>미래계획</span><span
+              class="steps__sep">→</span>
+            <span class="steps__item"><b class="steps__n">4</b>분석</span>
+          </nav>
+        </div>
+        <div class="card">
+          <div class="row-head row-head--triple"><span>이벤트</span><span>연도</span><span>금액</span><span
+              class="spacer"></span></div>
+          <div class="rows" id="timeline-rows"></div>
+          <div class="add-wrap">
+            <button class="add-btn" id="add-event" aria-label="이벤트 추가">+</button>
+            <span class="add-hint" id="timeline-hint"></span>
+          </div>
+        </div>
+        <div class="panel__actions panel__actions--split">
+          <button class="nav-back nav-back--glass" data-back type="button">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.6"
+              stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M15 18l-6-6 6-6" />
+            </svg>
+            뒤로가기
+          </button>
+          <button class="done" id="timeline-done">자산 안정성 확인 →</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 6. 자산 안정성 ============ -->
+  <section class="screen mesh mesh-b" id="screen-result" aria-label="자산 안정성">
+    <div class="panel">
+      <div class="panel__inner">
+        <div class="panel__head">
+          <span class="panel__brand">Leið</span>
+          <h2 class="panel__title">나의 자산 안정성</h2>
+          <nav class="steps" aria-label="진행 단계">
+            <span class="steps__item is-done"><b class="steps__n">1</b>기본정보</span><span class="steps__sep">→</span>
+            <span class="steps__item is-done"><b class="steps__n">2</b>금융상태</span><span class="steps__sep">→</span>
+            <span class="steps__item is-done"><b class="steps__n">3</b>미래계획</span><span class="steps__sep">→</span>
+            <span class="steps__item is-now" aria-current="step"><b class="steps__n">4</b>분석</span>
+          </nav>
+        </div>
+        <div class="card chart-card">
+          <div class="chart-top">
+            <div>
+              <span class="score__label">현재 안정성 지수<button class="info-btn" id="info-toggle" type="button"
+                  aria-expanded="false" aria-controls="info-pop" aria-label="안정성 지수 설명 보기">i</button></span>
+              <div class="score"><span class="score__num" id="score-num">—</span><span class="score__unit">/ 100</span>
+              </div>
+            </div>
+            <div class="verdict">
+              <span class="verdict__tag" id="verdict-tag">—</span>
+              <p class="verdict__sub" id="verdict-sub"></p>
+            </div>
+          </div>
+
+          <div class="info-pop" id="info-pop" hidden>
+            <h4>안정성 지수란?</h4>
+            <p>현재 입력한 금융상태와 미래의 생애 이벤트를 바탕으로, 시간에 따른 자산 안정성을 보여주는 지표입니다.</p>
+            <p>순자산으로 매달 고정으로 나가는 지출을 몇 년 버틸 수 있는지로 계산하며, 5년치 이상이면 100이 됩니다.</p>
+          </div>
+
+          <span class="sec-label">안정성 변화</span>
+          <div id="chart-host"></div>
+
+          <span class="sec-label">주요 지표</span>
+          <div class="readout">
+            <div class="readout__cell"><span class="readout__k">순자산</span><span class="readout__v"
+                id="ro-assets">—</span></div>
+            <div class="readout__cell"><span class="readout__k">연간 여유자금</span><span class="readout__v"
+                id="ro-flow">—</span></div>
+            <div class="readout__cell"><span class="readout__k">가장 낮아지는 시점</span><span class="readout__v"
+                id="ro-low">—</span></div>
+          </div>
+
+          <div class="analysis">
+            <h3 class="analysis__title">Leið의 분석</h3>
+            <div class="analysis__body" id="analysis-body"></div>
+          </div>
+        </div>
+        <div class="panel__actions panel__actions--split">
+          <button class="nav-back nav-back--glass" data-back type="button">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.6"
+              stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M15 18l-6-6 6-6" />
+            </svg>
+            뒤로가기
+          </button>
+          <div class="action-group">
+            <button class="ghost-btn" data-go="finance">금융상태 수정</button>
+            <!-- 나가기 버튼 변경 -->
+            <button class="ghost-btn" id="logout"
+              style="color: var(--danger); border-color: rgba(196, 86, 107, 0.4);">나가기</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 확인 대화상자 ============ -->
+  <div class="modal" id="modal" hidden>
+    <div class="modal__backdrop" id="modal-backdrop"></div>
+    <div class="modal__box" role="alertdialog" aria-modal="true" aria-labelledby="modal-title"
+      aria-describedby="modal-desc">
+      <h3 class="modal__title" id="modal-title"></h3>
+      <p class="modal__desc" id="modal-desc"></p>
+      <div class="modal__list" id="modal-list" hidden></div>
+      <div class="modal__actions">
+        <button class="modal__btn modal__btn--ghost" id="modal-fill" type="button">입력하기</button>
+        <button class="modal__btn modal__btn--solid" id="modal-skip" type="button">건너뛰기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 말풍선 툴팁 컨테이너 추가 -->
+  <div id="chart-tooltip"></div>
+
+  <script>
+    (function () {
+      "use strict";
+
+      /* ============================================================
+         데이터 — 예시 행은 최소한만, 나머지는 사용자가 추가
+         ============================================================ */
+      var SAMPLE_FINANCE = [
+        { name: "예금, 적금", kind: "saving" },
+        { name: "월 소득", kind: "income" },
+        { name: "월세", kind: "outflow" },
+        { name: "생활비", kind: "outflow" }
+      ];
+      var SAMPLE_EVENTS = ["결혼", "주택구매"];
+
+      var KINDS = [
+        { key: "asset", label: "자산", hint: "금액을 입력하세요 (만 원)", rate: true },
+        { key: "saving", label: "저축", hint: "월 납입액을 입력하세요 (만 원)", rate: true },
+        { key: "income", label: "월수입", hint: "월 금액을 입력하세요 (만 원)", rate: false },
+        { key: "outflow", label: "월지출", hint: "월 금액을 입력하세요 (만 원)", rate: false }
+      ];
+      function kindLabel(k) {
+        for (var i = 0; i < KINDS.length; i++) if (KINDS[i].key === k) return KINDS[i].label;
+        return "";
+      }
+      function kindHint(k) {
+        for (var i = 0; i < KINDS.length; i++) if (KINDS[i].key === k) return KINDS[i].hint;
+        return "금액을 입력하세요 (만 원)";
+      }
+      function kindHasRate(k) {
+        for (var i = 0; i < KINDS.length; i++) if (KINDS[i].key === k) return KINDS[i].rate;
+        return false;
+      }
+
+      var MAX_ROWS = 12;      /* 화면당 전체 행 수 상한 */
+      var HORIZON = 20;      /* 그래프 기간(년) */
+
+      /* 모든 금액은 '만 원' 단위 숫자 문자열로 보관합니다 */
+      var state = { finance: [], events: [] };
+      var seq = 0;
+
+      function loadSamples() {
+        state.finance = SAMPLE_FINANCE.map(function (s, i) {
+          return { id: "ff" + i, name: s.name, kind: s.kind, sample: true, amount: "", rate: "" };
+        });
+        state.events = SAMPLE_EVENTS.map(function (n, i) {
+          return { id: "fx" + i, name: n, sample: true, year: "", amount: "" };
+        });
+        seq = 0;
+      }
+      loadSamples();
+
+      /* ============================================================
+         숫자 · 문자 유틸
+         ============================================================ */
+      function digitsOnly(v, max) { var d = String(v).replace(/[^0-9]/g, ""); return max ? d.slice(0, max) : d; }
+      function withCommas(d) { return d ? Number(d).toLocaleString("ko-KR") : ""; }
+      function num(v) { var d = digitsOnly(v); return d ? Number(d) : 0; }
+      function moneyText(man) {
+        if (!man) return "0만 원";
+        var neg = man < 0; man = Math.abs(man);
+        var out;
+        if (man >= 10000) {
+          var eok = Math.floor(man / 10000), rest = Math.round(man % 10000);
+          out = withCommas(String(eok)) + "억" + (rest ? " " + withCommas(String(rest)) + "만" : "") + " 원";
+        } else out = withCommas(String(Math.round(man))) + "만 원";
+        return (neg ? "-" : "") + out;
+      }
+      function esc(s) {
+        return String(s).replace(/[&<>"']/g, function (c) {
+          return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+        });
+      }
+
+      function attachAmount(el, onChange) {
+        el.addEventListener("input", function () {
+          var caret = el.selectionStart || 0;
+          var before = el.value.slice(0, caret).replace(/[^0-9]/g, "").length;
+          var raw = digitsOnly(el.value, 12);
+          el.value = withCommas(raw);
+          var pos = 0, seen = 0;
+          while (pos < el.value.length && seen < before) {
+            if (/[0-9]/.test(el.value[pos])) seen++;
+            pos++;
+          }
+          try { el.setSelectionRange(pos, pos); } catch (e) { }
+          onChange(raw);
+        });
+      }
+      function attachYear(el, onChange) {
+        el.addEventListener("input", function () {
+          el.value = digitsOnly(el.value, 4);
+          onChange(el.value);
+        });
+      }
+      /* 이자율: 숫자와 소수점 한 개, 정수 두 자리 + 소수 두 자리까지 */
+      function attachRate(el, onChange) {
+        el.addEventListener("input", function () {
+          var v = el.value.replace(/[^0-9.]/g, "");
+          var p = v.split(".");
+          if (p.length > 2) v = p[0] + "." + p.slice(1).join("");
+          var m = v.match(/^(\d{0,2})(\.\d{0,2})?/);
+          el.value = m ? (m[1] + (m[2] || "")) : "";
+          onChange(el.value);
+        });
+      }
+      function rateOf(f) {
+        var r = parseFloat(f.rate);
+        return isFinite(r) ? r / 100 : 0;
+      }
+
+      /* 생년월일 yyyy-mm-dd */
+      function formatBirth(el) {
+        var atEnd = (el.selectionStart || 0) >= el.value.length;
+        var d = digitsOnly(el.value, 8);
+        var out = d.slice(0, 4);
+        if (d.length > 4) out += "-" + d.slice(4, 6);
+        if (d.length > 6) out += "-" + d.slice(6, 8);
+        el.value = out;
+        if (atEnd) { try { el.setSelectionRange(out.length, out.length); } catch (e) { } }
+      }
+      function birthProblem(v) {
+        v = String(v).trim();
+        if (!v) return "생년월일을 입력하세요.";
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(v)) return "생년월일을 yyyy-mm-dd 형식으로 입력하세요.";
+        var y = +v.slice(0, 4), m = +v.slice(5, 7), day = +v.slice(8, 10), ty = new Date().getFullYear();
+        if (y < 1900 || y > ty) return "연도를 1900년에서 " + ty + "년 사이로 입력하세요.";
+        if (m < 1 || m > 12) return "월은 01에서 12 사이여야 합니다.";
+        var last = new Date(y, m, 0).getDate();
+        if (day < 1 || day > last) return y + "년 " + m + "월은 " + last + "일까지 있습니다.";
+        if (new Date(y, m - 1, day) > new Date()) return "미래 날짜는 입력할 수 없습니다.";
+        return null;
+      }
+
+      /* 이메일 또는 전화번호 형식 — 입력창은 하나로 유지합니다 */
+      var EMAIL_RE = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}$/;
+      function contactProblem(v) {
+        v = String(v).trim();
+        if (!v) return "이메일 혹은 전화번호를 입력하세요.";
+        if (EMAIL_RE.test(v)) return null;
+        /* 숫자와 하이픈·공백·선행 + 만으로 이루어진 9~13자리는 전화번호로 봅니다 */
+        if (/^\+?[0-9][0-9\s-]*[0-9]$/.test(v)) {
+          var d = v.replace(/[^0-9]/g, "");
+          if (d.length >= 9 && d.length <= 13) return null;
+        }
+        return "이메일 또는 전화번호 형식으로 입력해주세요.";
+      }
+
+      /* 잠깐 뜨는 안내 (한글 차단 등) */
+      function flashNote(el, msg) {
+        var wrap = el.closest(".field-wrap"); if (!wrap) return;
+        var note = wrap.querySelector(".field-error");
+        if (note) note.textContent = msg;
+        wrap.classList.add("is-invalid"); el.classList.add("is-invalid");
+        clearTimeout(el._noteTimer);
+        el._noteTimer = setTimeout(function () {
+          wrap.classList.remove("is-invalid"); el.classList.remove("is-invalid");
+        }, 1900);
+      }
+
+      document.querySelectorAll("[data-birth]").forEach(function (el) {
+        el.addEventListener("input", function () { formatBirth(el); });
+        el.addEventListener("keydown", function (e) {
+          if (e.key === "Backspace" && el.selectionStart === el.selectionEnd) {
+            var p = el.selectionStart;
+            if (p > 0 && el.value[p - 1] === "-") {
+              e.preventDefault();
+              el.value = el.value.slice(0, p - 2) + el.value.slice(p);
+              formatBirth(el);
+            }
+          }
+        });
+      });
+
+      /* 이메일 · 전화번호에는 한글이 들어가지 않습니다 */
+      var HANGUL = /[\u3131-\u318E\uAC00-\uD7A3]/g;
+      document.querySelectorAll("[data-no-hangul]").forEach(function (el) {
+        el.addEventListener("input", function () {
+          var v = el.value;
+          var cleaned = v.replace(HANGUL, "");
+          if (cleaned === v) return;
+          var caret = (el.selectionStart || 0) - (v.length - cleaned.length);
+          el.value = cleaned;
+          try { el.setSelectionRange(Math.max(0, caret), Math.max(0, caret)); } catch (e) { }
+          flashNote(el, "이메일 또는 전화번호는 한글로 입력할 수 없습니다.");
+        });
+      });
+
+      /* 약관 펼치기 */
+      var cToggle = document.getElementById("consent-toggle");
+      var cDetail = document.getElementById("consent-detail");
+      cToggle.addEventListener("click", function () {
+        var open = cDetail.hasAttribute("hidden");
+        if (open) { cDetail.removeAttribute("hidden"); } else { cDetail.setAttribute("hidden", ""); }
+        cToggle.setAttribute("aria-expanded", open ? "true" : "false");
+        cToggle.textContent = open ? "약관 접기" : "약관 보기";
+      });
+      var agreeBox = document.getElementById("su-agree");
+      agreeBox.addEventListener("change", function () {
+        if (agreeBox.checked) document.getElementById("consent").classList.remove("is-invalid");
+      });
+
+      /* ============================================================
+         확인 대화상자
+         ============================================================ */
+      var modal = document.getElementById("modal");
+      var modalTitle = document.getElementById("modal-title");
+      var modalDesc = document.getElementById("modal-desc");
+      var modalList = document.getElementById("modal-list");
+      var btnFill = document.getElementById("modal-fill");
+      var btnSkip = document.getElementById("modal-skip");
+      var modalBack = document.getElementById("modal-backdrop");
+      var pending = null;
+      var lastFocus = null;
+
+      function openModal(opts) {
+        modalTitle.textContent = opts.title;
+        modalDesc.textContent = opts.desc;
+        btnFill.textContent = opts.fillLabel || "입력하기";
+        btnSkip.textContent = opts.skipLabel || "건너뛰기";
+        btnSkip.classList.toggle("modal__btn--danger", !!opts.danger);
+        btnSkip.classList.toggle("modal__btn--solid", !opts.danger);
+        if (opts.list && opts.list.length) {
+          modalList.innerHTML = opts.list.map(esc).join("<br>");
+          modalList.removeAttribute("hidden");
+        } else modalList.setAttribute("hidden", "");
+        pending = opts;
+        lastFocus = document.activeElement;
+        modal.removeAttribute("hidden");
+        /* 되돌릴 수 없는 동작은 안전한 쪽에 먼저 초점을 둡니다 */
+        (opts.danger ? btnFill : btnSkip).focus();
+      }
+      function closeModal() {
+        modal.setAttribute("hidden", "");
+        pending = null;
+        if (lastFocus && lastFocus.focus) lastFocus.focus();
+      }
+      btnSkip.addEventListener("click", function () {
+        var go = pending && pending.onSkip;
+        closeModal();
+        if (go) go();
+      });
+      btnFill.addEventListener("click", function () {
+        var back = pending && pending.onFill;
+        closeModal();
+        if (back) back();
+      });
+      modalBack.addEventListener("click", function () { if (pending) btnFill.click(); });
+      document.addEventListener("keydown", function (e) {
+        if (modal.hasAttribute("hidden")) return;
+        if (e.key === "Escape") { e.preventDefault(); btnFill.click(); }
+        if (e.key === "Tab") {
+          e.preventDefault();
+          (document.activeElement === btnSkip ? btnFill : btnSkip).focus();
+        }
+      });
+
+      /* ============================================================
+         4. 금융상태
+         ============================================================ */
+      var financeRoot = document.getElementById("finance-rows");
+      var addFinBtn = document.getElementById("add-finance");
+      var finHint = document.getElementById("finance-hint");
+
+      function buildFinanceRow(item) {
+        var row = document.createElement("div");
+        row.className = "row row--pair";
+
+        /* 이름 — 예시 행도 직접 고쳐 쓸 수 있게 입력칸으로 둡니다 */
+        var nId = "fnm-" + item.id;
+        var nLab = document.createElement("label");
+        nLab.className = "sr"; nLab.htmlFor = nId; nLab.textContent = "항목 이름";
+        var nameIn = document.createElement("input");
+        nameIn.className = "tag-input f-name"; nameIn.id = nId; nameIn.type = "text";
+        nameIn.maxLength = 14; nameIn.placeholder = "항목 입력"; nameIn.value = item.name;
+
+        // 키워드 자동 감지 추가
+        nameIn.addEventListener("input", function () {
+          item.name = nameIn.value; item.sample = false;
+          var val = nameIn.value.trim();
+          if (/월급|소득|급여|알바|수입|배당|상여|보너스/.test(val)) { applyKind("income"); }
+          else if (/월세|생활비|식비|지출|공과금|통신비|보험|관리비|용돈|구독/.test(val)) { applyKind("outflow"); }
+          else if (/적금|예금|청약|저축|부금/.test(val)) { applyKind("saving"); }
+          else if (/부동산|아파트|주식|코인|보증금|자산|펀드|채권|현금/.test(val)) { applyKind("asset"); }
+        });
+        row.appendChild(nLab); row.appendChild(nameIn);
+
+        /* 종류 선택 */
+        var kind = document.createElement("div");
+        kind.className = "kind f-kind";
+        kind.setAttribute("role", "group");
+        kind.setAttribute("aria-label", "항목 종류");
+        var amt, rate; /* 아래에서 만들고, 선택에 따라 상태를 바꿉니다 */
+        function syncKind() {
+          if (amt) amt.placeholder = kindHint(item.kind);
+          if (rate) {
+            var on = kindHasRate(item.kind);
+            rate.disabled = !on;
+            rate.placeholder = on ? "연 %" : "—";
+            if (!on) { rate.value = ""; item.rate = ""; }
+          }
+        }
+
+        function applyKind(kKey) {
+          item.kind = kKey;
+          kind.querySelectorAll(".kind__opt").forEach(function (o) {
+            o.classList.remove("is-on"); o.setAttribute("aria-pressed", "false");
+          });
+          var btn = Array.from(kind.querySelectorAll(".kind__opt")).find(function (b) {
+            var kData = KINDS.find(function (k) { return k.label === b.textContent; });
+            return kData && kData.key === kKey;
+          });
+          if (btn) {
+            btn.classList.add("is-on"); btn.setAttribute("aria-pressed", "true");
+          }
+          syncKind();
+        }
+
+        KINDS.forEach(function (k) {
+          var b = document.createElement("button");
+          b.type = "button";
+          b.className = "kind__opt" + (item.kind === k.key ? " is-on" : "");
+          b.textContent = k.label;
+          b.setAttribute("aria-pressed", item.kind === k.key ? "true" : "false");
+          b.addEventListener("click", function () { applyKind(k.key); });
+          kind.appendChild(b);
+        });
+        row.appendChild(kind);
+
+        /* 금액 */
+        var aId = "fin-" + item.id;
+        var aLab = document.createElement("label");
+        aLab.className = "sr"; aLab.htmlFor = aId; aLab.textContent = "금액 (만 원)";
+        amt = document.createElement("input");
+        amt.className = "slot f-amt"; amt.id = aId; amt.type = "text";
+        amt.inputMode = "numeric"; amt.placeholder = kindHint(item.kind);
+        amt.value = withCommas(item.amount);
+        attachAmount(amt, function (raw) { item.amount = raw; });
+        row.appendChild(aLab); row.appendChild(amt);
+
+        /* 연 이자율 — 자산·저축에만 적용됩니다 */
+        var rId = "rate-" + item.id;
+        var rLab = document.createElement("label");
+        rLab.className = "sr"; rLab.htmlFor = rId; rLab.textContent = "연 이자율 (%)";
+        rate = document.createElement("input");
+        rate.className = "rate f-rate"; rate.id = rId; rate.type = "text";
+        rate.inputMode = "decimal"; rate.value = item.rate || "";
+        attachRate(rate, function (v) { item.rate = v; });
+        row.appendChild(rLab); row.appendChild(rate);
+
+        syncKind();
+
+        var del = document.createElement("button");
+        del.className = "row-remove"; del.type = "button";
+        del.innerHTML = "&times;";
+        del.setAttribute("aria-label", "항목 삭제");
+        del.addEventListener("click", function () {
+          state.finance = state.finance.filter(function (f) { return f.id !== item.id; });
+          renderFinance(); addFinBtn.focus();
+        });
+        row.appendChild(del);
+
+        return row;
+      }
+
+      function renderFinance() {
+        financeRoot.innerHTML = "";
+        if (!state.finance.length) {
+          var p = document.createElement("p");
+          p.className = "empty-note";
+          p.textContent = "+ 를 눌러 항목을 추가하세요.";
+          financeRoot.appendChild(p);
+        } else {
+          state.finance.forEach(function (it) { financeRoot.appendChild(buildFinanceRow(it)); });
+        }
+        var left = MAX_ROWS - state.finance.length;
+        addFinBtn.disabled = left <= 0;
+        finHint.textContent = left > 0
+          ? "항목을 " + left + "개 더 추가할 수 있습니다"
+          : "항목은 " + MAX_ROWS + "개까지입니다";
+      }
+
+      addFinBtn.addEventListener("click", function () {
+        if (state.finance.length >= MAX_ROWS) return;
+        var item = { id: "cf" + (seq++), name: "", kind: "asset", sample: false, amount: "", rate: "" };
+        state.finance.push(item);
+        renderFinance();
+        var el = document.getElementById("fnm-" + item.id);
+        if (el) el.focus();
+      });
+
+      // 내 데이터 불러오기 기능
+      var loadDataBtn = document.getElementById("load-data");
+      if (loadDataBtn) {
+        loadDataBtn.addEventListener("click", function () {
+          var saved = localStorage.getItem("leid_saved_data");
+          if (saved) {
+            var parsed = JSON.parse(saved);
+            state.finance = parsed.finance || [];
+            state.events = parsed.events || [];
+            renderFinance();
+            renderTimeline();
+            alert("저장된 금융 데이터를 성공적으로 불러왔습니다!");
+          } else {
+            alert("저장된 이전 데이터가 없습니다. 새로운 정보를 입력해주세요.");
+          }
+        });
+      }
+
+      /* ============================================================
+         5. 타임라인
+         ============================================================ */
+      var timelineRoot = document.getElementById("timeline-rows");
+      var addEvtBtn = document.getElementById("add-event");
+      var tlHint = document.getElementById("timeline-hint");
+
+      function buildEventRow(evt) {
+        var row = document.createElement("div");
+        row.className = "row row--triple";
+
+        var nId = "evn-" + evt.id;
+        var nLab = document.createElement("label");
+        nLab.className = "sr"; nLab.htmlFor = nId; nLab.textContent = "이벤트 이름";
+        var nameIn = document.createElement("input");
+        nameIn.className = "tag-input"; nameIn.id = nId; nameIn.type = "text";
+        nameIn.maxLength = 14; nameIn.placeholder = "이벤트 입력"; nameIn.value = evt.name;
+        nameIn.addEventListener("input", function () { evt.name = nameIn.value; evt.sample = false; });
+        row.appendChild(nLab); row.appendChild(nameIn);
+
+        var yId = "yr-" + evt.id;
+        var yLab = document.createElement("label");
+        yLab.className = "sr"; yLab.htmlFor = yId; yLab.textContent = "연도";
+        var year = document.createElement("input");
+        year.className = "slot slot-year"; year.id = yId; year.type = "text";
+        year.inputMode = "numeric"; year.maxLength = 4;
+        year.placeholder = "연도를 입력하세요"; year.value = evt.year;
+        attachYear(year, function (v) { evt.year = v; });
+
+        var aId = "amt-" + evt.id;
+        var aLab = document.createElement("label");
+        aLab.className = "sr"; aLab.htmlFor = aId; aLab.textContent = "예상 금액 (만 원)";
+        var amt = document.createElement("input");
+        amt.className = "slot slot-amt"; amt.id = aId; amt.type = "text";
+        amt.inputMode = "numeric"; amt.placeholder = "예상 금액 (만 원)";
+        amt.value = withCommas(evt.amount);
+        attachAmount(amt, function (raw) { evt.amount = raw; });
+
+        row.appendChild(yLab); row.appendChild(year);
+        row.appendChild(aLab); row.appendChild(amt);
+
+        var del = document.createElement("button");
+        del.className = "row-remove"; del.type = "button";
+        del.innerHTML = "&times;";
+        del.setAttribute("aria-label", "이벤트 삭제");
+        del.addEventListener("click", function () {
+          state.events = state.events.filter(function (e) { return e.id !== evt.id; });
+          renderTimeline(); addEvtBtn.focus();
+        });
+        row.appendChild(del);
+
+        return row;
+      }
+
+      function renderTimeline() {
+        timelineRoot.innerHTML = "";
+        if (!state.events.length) {
+          var p = document.createElement("p");
+          p.className = "empty-note";
+          p.textContent = "+ 를 눌러 이벤트를 추가하세요.";
+          timelineRoot.appendChild(p);
+        } else {
+          state.events.forEach(function (e) { timelineRoot.appendChild(buildEventRow(e)); });
+        }
+        var left = MAX_ROWS - state.events.length;
+        addEvtBtn.disabled = left <= 0;
+        tlHint.textContent = left > 0
+          ? "이벤트를 " + left + "개 더 추가할 수 있습니다"
+          : "이벤트는 " + MAX_ROWS + "개까지입니다";
+      }
+
+      addEvtBtn.addEventListener("click", function () {
+        if (state.events.length >= MAX_ROWS) return;
+        var evt = { id: "cu" + (seq++), name: "", sample: false, year: "", amount: "" };
+        state.events.push(evt);
+        renderTimeline();
+        var el = document.getElementById("evn-" + evt.id);
+        if (el) el.focus();
+      });
+
+      renderFinance();
+      renderTimeline();
+
+      /* ============================================================
+         화면 전환 · 검증
+         ============================================================ */
+      var SCREENS = {
+        landing: "screen-landing", login: "screen-login", signup: "screen-signup",
+        finance: "screen-finance", timeline: "screen-timeline", result: "screen-result"
+      };
+      var LABEL = {
+        landing: "처음 화면", login: "로그인", signup: "회원가입",
+        finance: "나의 금융상태", timeline: "생애 이벤트", result: "자산 안정성"
+      };
+      var trail = [];
+
+      function clearErrors(screen) {
+        screen.querySelectorAll(".field-wrap").forEach(function (w) { w.classList.remove("is-invalid"); });
+        screen.querySelectorAll(".field").forEach(function (f) {
+          f.classList.remove("is-invalid"); f.removeAttribute("aria-invalid");
+        });
+        var c = screen.querySelector(".consent");
+        if (c) c.classList.remove("is-invalid");
+        var a = screen.querySelector(".form-alert");
+        if (a) { a.classList.remove("is-on"); a.textContent = ""; }
+      }
+
+      function validate(screen) {
+        clearErrors(screen);
+        var bad = [];
+
+        screen.querySelectorAll("input[required]").forEach(function (f) {
+          var msg = null;
+          if (!f.value.trim()) msg = f.dataset.name + " 항목을 입력하세요.";
+          else if (f.hasAttribute("data-birth")) msg = birthProblem(f.value);
+          else if (f.hasAttribute("data-contact")) msg = contactProblem(f.value);
+          if (!msg) return;
+          bad.push({ el: f, msg: msg, empty: !f.value.trim(), name: f.dataset.name });
+          f.classList.add("is-invalid"); f.setAttribute("aria-invalid", "true");
+          var wrap = f.closest(".field-wrap");
+          if (wrap) {
+            wrap.classList.add("is-invalid");
+            var note = wrap.querySelector(".field-error");
+            if (note) note.textContent = msg;
+          }
+        });
+
+        var check = screen.querySelector("input[data-require-check]");
+        if (check && !check.checked) {
+          bad.push({ el: check, msg: "개인정보 수집 및 이용에 동의해야 합니다.", empty: true, name: check.dataset.name });
+          var box = screen.querySelector(".consent");
+          if (box) box.classList.add("is-invalid");
+        }
+
+        if (!bad.length) return true;
+
+        var alertEl = screen.querySelector(".form-alert");
+        if (alertEl) {
+          var allEmpty = bad.every(function (b) { return b.empty; });
+          if (allEmpty) {
+            var names = bad.map(function (b) { return b.name; });
+            alertEl.textContent = names.length === 1
+              ? names[0] + " 항목을 확인해야 다음으로 넘어갈 수 있습니다."
+              : names.join(", ") + " 항목을 모두 확인해야 다음으로 넘어갈 수 있습니다.";
+          } else alertEl.textContent = bad[0].msg;
+          alertEl.classList.add("is-on");
+          void alertEl.offsetWidth;
+        }
+        bad[0].el.focus();
+        return false;
+      }
+
+      document.querySelectorAll("input[required]").forEach(function (f) {
+        f.addEventListener("input", function () {
+          if (!f.value.trim()) return;
+          if (f.hasAttribute("data-birth") && birthProblem(f.value)) return;
+          if (f.hasAttribute("data-contact") && contactProblem(f.value)) return;
+          f.classList.remove("is-invalid"); f.removeAttribute("aria-invalid");
+          var wrap = f.closest(".field-wrap");
+          if (wrap) wrap.classList.remove("is-invalid");
+        });
+      });
+
+      function currentKey() {
+        var found = null;
+        Object.keys(SCREENS).forEach(function (k) {
+          if (document.getElementById(SCREENS[k]).classList.contains("is-active")) found = k;
+        });
+        return found;
+      }
+      function updateBackLabels() {
+        var t = trail.length ? trail[trail.length - 1] : "landing";
+        document.querySelectorAll("[data-back]").forEach(function (b) {
+          b.setAttribute("title", LABEL[t] + "(으)로 돌아가기");
+          b.setAttribute("aria-label", LABEL[t] + "(으)로 돌아가기");
+        });
+      }
+      function show(key, viaBack) {
+        var from = currentKey();
+        if (from && from !== key) {
+          clearErrors(document.getElementById(SCREENS[from]));
+          if (!viaBack) trail.push(from);
+        }
+        if (key === "landing") trail.length = 0;
+        Object.keys(SCREENS).forEach(function (k) {
+          document.getElementById(SCREENS[k]).classList.toggle("is-active", k === key);
+        });
+        window.scrollTo(0, 0);
+        if (key === "result") renderResult();
+        updateBackLabels();
+        var first = document.getElementById(SCREENS[key]).querySelector("input");
+        if (first && key !== "landing") first.focus({ preventScroll: true });
+      }
+      function goBack() { show(trail.length ? trail.pop() : "landing", true); }
+
+      document.querySelectorAll("[data-back]").forEach(function (el) { el.addEventListener("click", goBack); });
+
+      // 백엔드 주소 (FastAPI)
+      var API_BASE = "http://127.0.0.1:8000";
+
+      document.querySelectorAll("[data-go]").forEach(function (el) {
+        el.addEventListener("click", async function () {
+          if (el.hasAttribute("data-validate")) {
+            if (!validate(el.closest(".screen"))) return;
+          }
+          var targetScreen = el.getAttribute("data-go");
+
+          if (targetScreen === "login" && el.closest("#screen-signup")) {
+            var reqData = {
+              name: document.getElementById('su-name').value,
+              birthdate: document.getElementById('su-birth').value,
+              email_or_phone: document.getElementById('su-contact').value || document.getElementById('su-id').value,
+              job: document.getElementById('su-job').value,
+              password: document.getElementById('su-pw').value
+            };
+            try {
+              var res = await fetch(API_BASE + "/api/auth/signup", {
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(reqData)
+              });
+              if (!res.ok) {
+                var result = await res.json();
+                var alertEl = document.getElementById('signup-alert');
+                alertEl.textContent = result.detail; alertEl.classList.add("is-on"); return;
+              }
+            } catch (e) { alert("서버에 연결할 수 없습니다."); return; }
+          }
+
+          if (targetScreen === "finance" && el.closest("#screen-login")) {
+            var reqData = {
+              email_or_phone: document.getElementById('login-id').value,
+              password: document.getElementById('login-pw').value
+            };
+            try {
+              var res = await fetch(API_BASE + "/api/auth/login", {
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(reqData)
+              });
+              if (res.ok) {
+                var result = await res.json();
+                localStorage.setItem('user_id', result.user.id);
+                localStorage.setItem('user_name', result.user.name);
+              } else {
+                var result = await res.json();
+                var alertEl = document.getElementById('login-alert');
+                alertEl.textContent = result.detail || "일치하는 회원 정보가 없습니다."; alertEl.classList.add("is-on"); return;
+              }
+            } catch (e) { alert("서버에 연결할 수 없습니다."); return; }
+          }
+
+          show(targetScreen);
+        });
+      });
+
+      /* ============================================================
+         완료 — 비어 있으면 건너뛸지 물어봅니다
+         ============================================================ */
+      function firstEmptyIn(screen) {
+        var list = screen.querySelectorAll(".slot, .tag-input");
+        for (var i = 0; i < list.length; i++) if (!list[i].value.trim()) return list[i];
+        return null;
+      }
+
+      document.getElementById("finance-done").addEventListener("click", function () {
+        var filled = state.finance.filter(function (f) { return num(f.amount) > 0; });
+        var blanks = state.finance.filter(function (f) { return !num(f.amount); });
+
+        if (!filled.length) {
+          openModal({
+            title: "금융정보를 아직 입력하지 않았습니다",
+            desc: "입력하지 않으면 자산 안정성 지수를 계산할 수 없어 결과 화면이 비어 있게 됩니다. 그래도 진행하시겠습니까?",
+            onSkip: function () { show("timeline"); },
+            onFill: function () { var e = firstEmptyIn(document.getElementById("screen-finance")); if (e) e.focus(); }
+          });
+          return;
+        }
+        if (blanks.length) {
+          openModal({
+            title: "아직 입력하지 않은 금융정보가 있습니다",
+            desc: "비어 있는 항목은 0원으로 계산됩니다. 입력하지 않고 진행하시겠습니까?",
+            list: blanks.map(function (f) { return "· " + (f.name.trim() || "이름 없는 항목") + " (" + kindLabel(f.kind) + ")"; }),
+            onSkip: function () { show("timeline"); },
+            onFill: function () { var e = firstEmptyIn(document.getElementById("screen-finance")); if (e) e.focus(); }
+          });
+          return;
+        }
+        show("timeline");
+      });
+
+      document.getElementById("timeline-done").addEventListener("click", async function () {
+        var incomplete = state.events.filter(function (e) {
+          return !e.name.trim() || !num(e.year) || !num(e.amount);
+        });
+        var complete = state.events.length - incomplete.length;
+
+        async function saveAndShowResult() {
+          try {
+            var userId = localStorage.getItem("user_id");
+            localStorage.setItem("leid_saved_data", JSON.stringify({ finance: state.finance, events: state.events }));
+            if (userId) {
+              var payload = {
+                user_id: parseInt(userId),
+                financial_items: state.finance.map(function (f) { return { name: f.name || "미지정", amount: parseInt(f.amount) || 0 }; }),
+                events: state.events.map(function (e) { return { name: e.name || "미지정", year: parseInt(e.year) || 0, amount: parseInt(e.amount) || 0 }; })
+              };
+              await fetch("http://127.0.0.1:8000/api/data/save", {
+                method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload)
+              });
+            }
+          } catch (e) {
+            console.log("데이터 저장 실패", e);
+          }
+          show("result");
+        }
+
+        if (!complete) {
+          openModal({
+            title: "생애 이벤트를 아직 입력하지 않았습니다",
+            desc: "이벤트를 넣지 않으면 안정성 곡선에 지출 시점이 표시되지 않습니다. 그래도 진행하시겠습니까?",
+            onSkip: saveAndShowResult,
+            onFill: function () { var e = firstEmptyIn(document.getElementById("screen-timeline")); if (e) e.focus(); }
+          });
+          return;
+        }
+        if (incomplete.length) {
+          openModal({
+            title: "아직 입력하지 않은 이벤트가 있습니다",
+            desc: "이름 · 연도 · 금액이 모두 있어야 그래프에 반영됩니다. 입력하지 않고 진행하시겠습니까?",
+            list: incomplete.map(function (e) { return "· " + (e.name.trim() || "이름 없는 이벤트"); }),
+            onSkip: saveAndShowResult,
+            onFill: function () { var e = firstEmptyIn(document.getElementById("screen-timeline")); if (e) e.focus(); }
+          });
+          return;
+        }
+        saveAndShowResult();
+      });
+
+      // 나가기 (로그아웃) 기능
+      var logoutBtn = document.getElementById("logout");
+      if (logoutBtn) {
+        logoutBtn.addEventListener("click", function () {
+          openModal({
+            title: "로그아웃 하시겠습니까?",
+            desc: "작성하신 내용은 안전하게 임시 저장됩니다. 나중에 '내 데이터 불러오기'를 통해 이어서 진단할 수 있습니다. 처음 화면으로 돌아가시겠습니까?",
+            fillLabel: "취소", skipLabel: "나가기", danger: true,
+            onSkip: function () {
+              localStorage.removeItem("user_id");
+              localStorage.removeItem("user_name");
+              loadSamples(); renderFinance(); renderTimeline();
+              show("landing");
+            },
+            onFill: function () { }
+          });
+        });
+      }
+
+      /* Enter — 다음 칸으로, 마지막이면 완료 */
+      document.addEventListener("keydown", function (e) {
+        if (e.key !== "Enter") return;
+        if (!modal.hasAttribute("hidden")) return;
+        var el = e.target;
+        if (!el.matches || !el.matches("input")) return;
+        if (el.type === "checkbox") return;
+        e.preventDefault();
+        var screen = el.closest(".screen");
+        var inputs = Array.prototype.slice.call(screen.querySelectorAll("input"));
+        var next = inputs[inputs.indexOf(el) + 1];
+        if (next) { next.focus(); return; }
+        var btn = screen.querySelector(".submit, .done");
+        if (btn) btn.click();
+      });
+      document.addEventListener("keydown", function (e) {
+        if (e.altKey && e.key === "ArrowLeft") {
+          e.preventDefault();
+          if (currentKey() !== "landing" && modal.hasAttribute("hidden")) goBack();
+        }
+      });
+
+      /* ============================================================
+         6. 자산 안정성 곡선
+         ============================================================ */
+      function sumKind(kind) {
+        return state.finance.reduce(function (a, f) {
+          return a + (f.kind === kind ? num(f.amount) : 0);
+        }, 0);
+      }
+      function stabilityOf(assets, annualFixed) {
+        if (annualFixed <= 0) return assets > 0 ? 100 : 0;
+        return Math.max(0, Math.min(100, (assets / annualFixed / 5) * 100));
+      }
+
+      function project() {
+        var thisYear = new Date().getFullYear();
+
+        /* 이자가 붙는 항목은 각자 잔액을 따로 굴립니다.
+           자산 = 지금 가진 금액에서 시작, 저축 = 0에서 시작해 매년 납입액이 쌓입니다. */
+        var buckets = state.finance.filter(function (f) {
+          return f.kind === "asset" || f.kind === "saving";
+        }).map(function (f) {
+          return {
+            kind: f.kind,
+            rate: rateOf(f),
+            balance: f.kind === "asset" ? num(f.amount) : 0,
+            deposit: f.kind === "saving" ? num(f.amount) * 12 : 0
+          };
+        });
+
+        var annualIncome = sumKind("income") * 12;
+        var annualFixed = sumKind("outflow") * 12;
+        var annualSaving = sumKind("saving") * 12;   /* 월급에서 빠져나갑니다 */
+        var annualNet = annualIncome - annualFixed - annualSaving;
+
+        var byYear = {}, marks = [];
+        state.events.forEach(function (e) {
+          var y = num(e.year), amt = num(e.amount), label = (e.name || "").trim();
+          if (!y || y < thisYear || y > thisYear + HORIZON) return;
+          if (!amt && !label) return;
+          byYear[y] = (byYear[y] || 0) + amt;
+          if (label) marks.push({ year: y, name: label, amount: amt });
+        });
+
+        var cash = 0, series = [];
+        function total() {
+          return buckets.reduce(function (a, b) { return a + b.balance; }, cash);
+        }
+        for (var i = 0; i <= HORIZON; i++) {
+          var y = thisYear + i;
+          if (i > 0) {
+            buckets.forEach(function (b) { b.balance = b.balance * (1 + b.rate) + b.deposit; });
+            cash += annualNet - (byYear[y] || 0);
+          }
+          var tot = total();
+          series.push({ year: y, assets: tot, score: stabilityOf(tot, annualFixed) });
+        }
+
+        var savingEnd = buckets.reduce(function (a, b) {
+          return a + (b.kind === "saving" ? b.balance : 0);
+        }, 0);
+        var hasRate = state.finance.some(function (f) {
+          return kindHasRate(f.kind) && num(f.amount) > 0 && rateOf(f) > 0;
+        });
+
+        return {
+          series: series, marks: marks, startAssets: series[0].assets,
+          annualNet: annualNet, annualFixed: annualFixed, annualSaving: annualSaving,
+          savingEnd: savingEnd, hasRate: hasRate, thisYear: thisYear
+        };
+      }
+
+      function smoothPath(pts) {
+        if (pts.length < 2) return "";
+        var d = "M" + pts[0].x.toFixed(1) + "," + pts[0].y.toFixed(1);
+        for (var i = 0; i < pts.length - 1; i++) {
+          var p0 = pts[i - 1] || pts[i], p1 = pts[i], p2 = pts[i + 1], p3 = pts[i + 2] || p2;
+          var c1x = p1.x + (p2.x - p0.x) / 6, c1y = p1.y + (p2.y - p0.y) / 6;
+          var c2x = p2.x - (p3.x - p1.x) / 6, c2y = p2.y - (p3.y - p1.y) / 6;
+          d += " C" + c1x.toFixed(1) + "," + c1y.toFixed(1) + " " + c2x.toFixed(1) + "," + c2y.toFixed(1) +
+            " " + p2.x.toFixed(1) + "," + p2.y.toFixed(1);
+        }
+        return d;
+      }
+
+      /* 안정성 지수 설명 펼치기 */
+      var infoToggle = document.getElementById("info-toggle");
+      var infoPop = document.getElementById("info-pop");
+      infoToggle.addEventListener("click", function () {
+        var open = infoPop.hasAttribute("hidden");
+        if (open) infoPop.removeAttribute("hidden"); else infoPop.setAttribute("hidden", "");
+        infoToggle.setAttribute("aria-expanded", open ? "true" : "false");
+      });
+
+      /* 💡 변경: Leið의 분석 — 3단계 요약 및 최종 제언 구조화 */
+      function analysisLines(p, hasData) {
+        if (!hasData) return ["금융정보를 입력하면 현재 상태에 대한 분석을 확인할 수 있습니다."];
+
+        var out = [];
+        var now = p.series[0].score;
+        var last = p.series[p.series.length - 1].score;
+
+        // 1. 현재 금융상태 진단
+        var stateDesc = now >= 45 ? "고정지출 대비 예비 자금이 적절히 준비되어 있습니다." : "현재 자산 대비 고정지출 부담이 커 잉여 자금 확보가 시급합니다.";
+        var flowDesc = p.annualNet > 0 ? "매년 " + moneyText(p.annualNet) + "의 추가 여유 자금이 발생하고 있습니다." : "수지 타산상 적자 또는 여유 자금이 없는 상태입니다.";
+        out.push("<strong>[현재 금융 상태]</strong><br>" + stateDesc + " " + flowDesc);
+
+        // 2. 극점(이벤트) 영향 요약
+        if (p.marks.length > 0) {
+          var biggestEvt = p.marks.reduce(function (prev, curr) { return (curr.amount > prev.amount) ? curr : prev; }, p.marks[0]);
+          var evtScore = p.series[biggestEvt.year - p.thisYear].score;
+          var evtImpact = evtScore >= 45 ? "현재 흐름으로 방어 가능한 수준입니다." : "안정성이 급감하여 재무적 타격이 클 것으로 예상됩니다.";
+          out.push("<strong>[주요 이벤트 진단]</strong><br>가장 큰 지출인 " + biggestEvt.year + "년 <strong>[" + esc(biggestEvt.name) + "]</strong>(" + moneyText(biggestEvt.amount) + ") 발생 시점의 지수는 " + Math.round(evtScore) + "점이며, 이는 " + evtImpact);
+        } else {
+          out.push("<strong>[주요 이벤트 진단]</strong><br>현재 등록된 대형 지출 이벤트가 없어 전반적인 자산 곡선이 평탄하게 유지됩니다.");
+        }
+
+        // 3. 최종 결론 및 제언
+        var dangerYears = p.series.filter(function (s) { return s.score < 10; });
+        if (dangerYears.length > 0) {
+          out.push("<strong>[최종 제언: 위기 관리]</strong><br>⚠️ <strong>" + dangerYears[0].year + "년부터 뚜렷한 유동성 위기</strong>가 감지됩니다. 마이데이터를 통한 숨은 지출 누수를 막고, 해당 시점 전에 맞춤형 대출이나 단기 예비 자금 포트폴리오를 구성해 위험 구간의 현금 흐름을 선제적으로 확보하세요.");
+        } else if (last >= now) {
+          out.push("<strong>[최종 제언: 안정적 성장]</strong><br>✅ 큰 지출 후에도 안정성을 빠르게 회복하는 우수한 재무 구조입니다. 현재의 저축 비율을 유지하면서 잉여 자금을 투자로 전환해 수익률을 높이는 전략을 권장합니다.");
+        } else {
+          out.push("<strong>[최종 제언: 장기 대비]</strong><br>💡 즉각적인 위험은 없으나 장기적으로 안정성이 하락 추세에 있습니다. 불필요한 고정 지출을 재점검하고 추가적인 소득 파이프라인 구축을 고려해 보세요.");
+        }
+
+        return out;
+      }
+
+      function renderResult() {
+        var p = project();
+        var W = 820, H = 300, PL = 46, PR = 22, PT = 26, PB = 40;
+        var iW = W - PL - PR, iH = H - PT - PB;
+        var host = document.getElementById("chart-host");
+        var hasData = state.finance.some(function (f) { return num(f.amount) > 0; });
+
+        var xOf = function (i) { return PL + (i / HORIZON) * iW; };
+        var yOf = function (s) { return PT + iH - (s / 100) * iH; };
+        var pts = p.series.map(function (d, i) { return { x: xOf(i), y: yOf(d.score) }; });
+        var line = smoothPath(pts);
+        var area = line + " L" + pts[pts.length - 1].x.toFixed(1) + "," + (PT + iH) +
+          " L" + pts[0].x.toFixed(1) + "," + (PT + iH) + " Z";
+
+        var grid = "";
+        [0, 25, 50, 75, 100].forEach(function (v) {
+          var y = yOf(v);
+          grid += '<line class="chart-grid' + (v === 0 || v === 100 ? '' : ' chart-grid--mid') +
+            '" x1="' + PL + '" y1="' + y.toFixed(1) + '" x2="' + (W - PR) + '" y2="' + y.toFixed(1) + '"/>';
+          grid += '<text class="chart-ylab" x="' + (PL - 10) + '" y="' + (y + 3.5).toFixed(1) + '" text-anchor="end">' + v + '</text>';
+        });
+        var xlab = "";
+        for (var i = 0; i <= HORIZON; i += 5) {
+          xlab += '<text class="chart-axis" x="' + xOf(i).toFixed(1) + '" y="' + (H - 14) +
+            '" text-anchor="middle">' + p.series[i].year + '</text>';
+        }
+
+        var dots = "";
+        p.marks.sort(function (a, b) { return a.year - b.year; }).forEach(function (m, idx) {
+          var i = m.year - p.thisYear, x = xOf(i), y = yOf(p.series[i].score);
+          var ly = (idx % 2 === 0) ? y - 16 : y + 22;
+          var anchor = i > HORIZON - 4 ? "end" : (i < 3 ? "start" : "middle");
+
+          // 💡 변경: 말풍선에 들어갈 텍스트 조합
+          var evtScore = Math.round(p.series[i].score);
+          var scoreStatus = evtScore >= 45 ? "안정적 유지" : (evtScore >= 20 ? "주의 필요" : "심각한 유동성 위험");
+          var tooltipData = "<strong>[" + esc(m.name) + "]</strong> (" + m.year + "년)\n예상 지출: " + moneyText(m.amount) + "\n직후 안정성: " + evtScore + "점 (" + scoreStatus + ")";
+          var safeTooltip = esc(tooltipData).replace(/\n/g, "<br>"); // 줄바꿈 처리
+
+          // 💡 변경: evt-hover 클래스와 data-tt 속성 추가
+          dots += '<line class="evt-stem" x1="' + x.toFixed(1) + '" y1="' + PT + '" x2="' + x.toFixed(1) + '" y2="' + (PT + iH) + '"/>';
+          dots += '<circle class="evt-dot evt-hover" cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="6" data-tt="' + safeTooltip + '" style="cursor: pointer;"/>';
+          dots += '<text class="evt-name evt-hover" x="' + x.toFixed(1) + '" y="' + ly.toFixed(1) + '" text-anchor="' + anchor + '" data-tt="' + safeTooltip + '" style="cursor: pointer;">' + esc(m.name) + '</text>';
+        });
+
+        host.innerHTML =
+          '<svg class="chart" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="연도별 자산 안정성 지수 곡선 그래프">' +
+          '<defs><linearGradient id="areaFade" x1="0" y1="0" x2="0" y2="1">' +
+          '<stop offset="0%" stop-color="#ffffff" stop-opacity=".42"/>' +
+          '<stop offset="55%" stop-color="#ffffff" stop-opacity=".14"/>' +
+          '<stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>' +
+          '</linearGradient></defs>' +
+          grid + xlab +
+          (hasData
+            ? '<path class="fade-in" d="' + area + '" fill="url(#areaFade)"/>' +
+            '<path class="chart-line draw-in" d="' + line + '"/>' +
+            '<g class="fade-in">' + dots + '</g>'
+            : '<text class="chart-empty" x="' + (W / 2) + '" y="' + (PT + iH / 2) +
+            '" text-anchor="middle">금융상태를 입력하면 안정성 곡선이 그려집니다</text>') +
+          '</svg>';
+
+        var pathEl = host.querySelector(".chart-line");
+        if (pathEl) {
+          try { pathEl.style.setProperty("--len", pathEl.getTotalLength()); }
+          catch (e) { pathEl.classList.remove("draw-in"); }
+        }
+
+        // 💡 추가: 말풍선 마우스 호버 이벤트 리스너 연결
+        var tooltipEl = document.getElementById("chart-tooltip");
+        if (tooltipEl) {
+          host.querySelectorAll(".evt-hover").forEach(function (el) {
+            el.addEventListener("mouseenter", function () {
+              tooltipEl.innerHTML = el.getAttribute("data-tt");
+              tooltipEl.style.opacity = "1";
+            });
+            el.addEventListener("mousemove", function (e) {
+              tooltipEl.style.left = (e.clientX + 15) + "px";
+              tooltipEl.style.top = (e.clientY + 15) + "px";
+            });
+            el.addEventListener("mouseleave", function () {
+              tooltipEl.style.opacity = "0";
+            });
+          });
+        }
+
+        var now = p.series[0].score;
+        var low = p.series.reduce(function (a, b) { return b.score < a.score ? b : a; }, p.series[0]);
+        document.getElementById("score-num").textContent = hasData ? Math.round(now) : "—";
+
+        var tag, sub;
+        if (!hasData) { tag = "입력 대기"; sub = "금융정보를 입력하면 자산 안정성 지수를 확인할 수 있습니다."; }
+        else if (now >= 75) { tag = "안정"; sub = "고정지출 대비 자산 여력이 충분합니다."; }
+        else if (now >= 45) { tag = "보통"; sub = "당장은 여유가 있지만 큰 지출에는 대비가 필요합니다."; }
+        else if (now >= 20) { tag = "주의"; sub = "고정지출을 감당할 여력이 넉넉하지 않습니다."; }
+        else { tag = "취약"; sub = "자산 대비 고정지출 부담이 큽니다."; }
+        document.getElementById("verdict-tag").textContent = tag;
+        document.getElementById("verdict-sub").textContent = sub;
+
+        document.getElementById("analysis-body").innerHTML =
+          analysisLines(p, hasData).map(function (t) { return "<p>" + t + "</p>"; }).join("");
+
+        document.getElementById("ro-assets").textContent = hasData ? moneyText(p.startAssets) : "—";
+        document.getElementById("ro-flow").textContent = hasData ? (p.annualNet >= 0 ? "+" : "") + moneyText(p.annualNet) : "—";
+        document.getElementById("ro-low").textContent = hasData
+          ? (low.year === p.thisYear ? "현재" : low.year + "년") + " · " + Math.round(low.score) : "—";
+      }
+
+      updateBackLabels();
+    })();
+  </script>
+</body>
+
+</html>

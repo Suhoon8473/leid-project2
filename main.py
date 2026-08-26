@@ -84,7 +84,21 @@ class SaveDataRequest(BaseModel):
 # -------------------------------------------------------------
 # API 엔드포인트
 # -------------------------------------------------------------
+# 1.5 아이디 중복 확인 API
+@app.get("/api/auth/check-id")
+def check_id(login_id: str):
+    conn = sqlite3.connect("leid.db")
+    cursor = conn.cursor()
+    
+    # 전달받은 아이디가 이미 DB에 있는지 검사
+    cursor.execute("SELECT id FROM users WHERE email_or_phone = ?", (login_id,))
+    record = cursor.fetchone()
+    conn.close()
 
+    if record:
+        raise HTTPException(status_code=400, detail="이미 사용 중인 아이디입니다.")
+    
+    return {"message": "사용 가능한 아이디입니다."}
 # 1. 회원가입 API
 @app.post("/api/auth/signup")
 def signup(req: SignupRequest):

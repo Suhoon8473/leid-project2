@@ -157,3 +157,28 @@ def save_data(req: SaveDataRequest):
     conn.commit()
     conn.close()
     return {"message": "데이터가 성공적으로 저장되었습니다."}
+# 4. 금융 데이터 불러오기 API (새로 추가할 부분!)
+@app.get("/api/data/load")
+def load_data(user_id: int):
+    conn = sqlite3.connect("leid.db")
+    cursor = conn.cursor()
+    
+    # 전달받은 user_id와 일치하는 사람의 데이터만 쏙 뽑아옵니다.
+    cursor.execute("""
+        SELECT finance_json, events_json FROM financial_data 
+        WHERE user_id = ?
+    """, (user_id,))
+    
+    record = cursor.fetchone()
+    conn.close()
+    
+    # 저장된 데이터가 없는 경우 (처음 가입한 유저 등)
+    if not record:
+        return {"message": "저장된 데이터가 없습니다.", "financial_items": [], "events": []}
+        
+    # 데이터가 있으면 JSON 형태로 풀어서 전달합니다.
+    return {
+        "message": "데이터 불러오기 성공",
+        "financial_items": json.loads(record[0]),
+        "events": json.loads(record[1])
+    }

@@ -5,6 +5,7 @@ from typing import List, Optional
 import sqlite3
 import json
 import requests
+import os
 
 app = FastAPI(title="Leið Backend Server")
 
@@ -157,10 +158,9 @@ def load_data(user_id: int):
     if not record:
         return {"message": "저장된 데이터가 없습니다.", "financial_items": [], "events": []}
     return {"message": "데이터 불러오기 성공", "financial_items": json.loads(record[0]), "events": json.loads(record[1])}
-# 5. OpenCodex AI 분석 생성 API (새로 추가)
+# 5. Gemini AI 분석 생성 API (무료)
 @app.post("/api/analysis/generate")
 def generate_ai_analysis(req: AnalysisRequest):
-    # 1. AI에게 보낼 프롬프트 구성
     prompt = f"""
     당신은 전문 금융 자산 관리 AI 'Leið'입니다.
     사용자의 재무 데이터 요약: {req.summary_data}
@@ -171,29 +171,34 @@ def generate_ai_analysis(req: AnalysisRequest):
     3. [최종 제언]
     """
     
-    # 2. OpenCodex API 호출 설정 (실제 해커톤에서 제공받은 URL과 키로 변경하세요)
-    api_url = "https://api.opencodex.com/v1/chat/completions" # 예시 URL
+    # 🚨 발급받은 Gemini API 키를 아래 빈칸에 붙여넣으세요!
+    GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+    
+    # Gemini 1.5 Flash 모델 REST API 엔드포인트
+    api_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
+    
     headers = {
-        "Authorization": "Bearer 여기에_발급받은_API_키_입력", # 🚨 실제 키 입력
         "Content-Type": "application/json"
     }
+    
+    # Gemini 규격에 맞춘 페이로드 구조
     payload = {
-        "model": "opencodex-model", # 🚨 실제 모델명 입력
-        "messages": [{"role": "user", "content": prompt}]
+        "contents": [{
+            "parts": [{"text": prompt}]
+        }]
     }
     
     try:
-        # OpenCodex로 요청 보내기
+        # Gemini 서버로 데이터 전송 및 답변 대기
         response = requests.post(api_url, headers=headers, json=payload)
-        response.raise_for_status() # 에러 발생 시 예외 처리
+        response.raise_for_status() 
         
-        # OpenCodex의 응답 텍스트 추출 (API 명세서에 따라 ['choices'][0] 등 구조가 다를 수 있음)
-        result_text = response.json().get("choices", [{}])[0].get("message", {}).get("content", "분석 결과를 불러올 수 없습니다.")
+        # Gemini가 보내준 답변 텍스트만 정확하게 추출
+        result_text = response.json()["candidates"][0]["content"]["parts"][0]["text"]
         
         return {"ai_analysis": result_text}
         
     except Exception as e:
         print("AI 호출 에러:", e)
-        # API 연결 실패 시 예외 처리용 임시 텍스트
-        fallback_text = "<strong>[시스템 안내]</strong><br>현재 OpenCodex AI 서버와 통신할 수 없습니다. API 키 및 네트워크 상태를 확인해 주세요."
+        fallback_text = "<strong>[시스템 안내]</strong><br>현재 AI 서버와 통신할 수 없습니다. API 키 상태를 확인해 주세요."
         return {"ai_analysis": fallback_text}

@@ -7,7 +7,6 @@ import json
 
 app = FastAPI(title="Leið Backend Server")
 
-# 브라우저(HTML)와 서버 간의 통신을 허용하는 CORS 설정
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -16,26 +15,24 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# -------------------------------------------------------------
-# 데이터베이스 초기화 (SQLite)
-# -------------------------------------------------------------
+# 🚨 기존 DB와의 충돌을 막기 위해 새 데이터베이스 파일(leid2.db) 생성
+DB_FILE = "leid2.db"
+
 def init_db():
-    conn = sqlite3.connect("leid.db")
+    conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
-    
-    # 유저 테이블 생성
+    # login_id와 email을 완벽히 분리
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            email_or_phone TEXT UNIQUE NOT NULL,
+            login_id TEXT UNIQUE NOT NULL,
+            email TEXT NOT NULL,
             password TEXT NOT NULL,
             name TEXT NOT NULL,
             birthdate TEXT NOT NULL,
             job TEXT
         )
     """)
-    
-    # 금융 데이터 저장 테이블 생성
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS financial_data (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -45,24 +42,21 @@ def init_db():
             FOREIGN KEY (user_id) REFERENCES users (id)
         )
     """)
-    
     conn.commit()
     conn.close()
 
 init_db()
 
-# -------------------------------------------------------------
-# 요청 데이터 스키마 정의 (Pydantic)
-# -------------------------------------------------------------
 class SignupRequest(BaseModel):
+    login_id: str
+    email: str
+    password: str
     name: str
     birthdate: str
-    email_or_phone: str
-    password: str
     job: Optional[str] = ""
 
 class LoginRequest(BaseModel):
-    email_or_phone: str
+    login_id: str
     password: str
 
 class FinancialItem(BaseModel):
@@ -81,83 +75,59 @@ class SaveDataRequest(BaseModel):
     financial_items: Optional[List[FinancialItem]] = []
     events: Optional[List[EventItem]] = []
 
-# -------------------------------------------------------------
-# API 엔드포인트
-# -------------------------------------------------------------
-# 1.5 아이디 중복 확인 API
 @app.get("/api/auth/check-id")
 def check_id(login_id: str):
-    conn = sqlite3.connect("leid.db")
+    conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
-    
-    # 전달받은 아이디가 이미 DB에 있는지 검사
-    cursor.execute("SELECT id FROM users WHERE email_or_phone = ?", (login_id,))
+    cursor.execute("SELECT id FROM users WHERE login_id = ?", (login_id,))
     record = cursor.fetchone()
     conn.close()
-
     if record:
         raise HTTPException(status_code=400, detail="이미 사용 중인 아이디입니다.")
-    
     return {"message": "사용 가능한 아이디입니다."}
-# 1. 회원가입 API
+
 @app.post("/api/auth/signup")
 def signup(req: SignupRequest):
-    conn = sqlite3.connect("leid.db")
+    conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
-    
-    # 중복 계정 확인
-    cursor.execute("SELECT id FROM users WHERE email_or_phone = ?", (req.email_or_phone,))
+    cursor.execute("SELECT id FROM users WHERE login_id = ?", (req.login_id,))
     if cursor.fetchone():
         conn.close()
-        raise HTTPException(status_code=400, detail="이미 등록된 이메일 또는 전화번호입니다.")
+        raise HTTPException(status_code=400, detail="이미 사용 중인 아이디입니다.")
     
     cursor.execute("""
-        INSERT INTO users (email_or_phone, password, name, birthdate, job)
-        VALUES (?, ?, ?, ?, ?)
-    """, (req.email_or_phone, req.password, req.name, req.birthdate, req.job))
-    
+        INSERT INTO users (login_id, email, password, name, birthdate, job)
+        VALUES (?, ?, ?, ?, ?, ?)
+    """, (req.login_id, req.email, req.password, req.name, req.birthdate, req.job))
     conn.commit()
     conn.close()
     return {"message": "회원가입이 완료되었습니다."}
 
-# 2. 로그인 API
 @app.post("/api/auth/login")
 def login(req: LoginRequest):
-    conn = sqlite3.connect("leid.db")
+    conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
-    
     cursor.execute("""
         SELECT id, name FROM users 
-        WHERE email_or_phone = ? AND password = ?
-    """, (req.email_or_phone, req.password))
-    
+        WHERE login_id = ? AND password = ?
+    """, (req.login_id, req.password))
     user = cursor.fetchone()
     conn.close()
     
     if not user:
-        raise HTTPException(status_code=401, detail="아이디(이메일/연락처) 또는 비밀번호가 일치하지 않습니다.")
+        raise HTTPException(status_code=401, detail="아이디 또는 비밀번호가 일치하지 않습니다.")
     
-    return {
-        "message": "로그인 성공",
-        "user": {
-            "id": user[0],
-            "name": user[1]
-        }
-    }
+    return {"message": "로그인 성공", "user": {"id": user[0], "name": user[1]}}
 
-# 3. 금융 데이터 저장 API
 @app.post("/api/data/save")
 def save_data(req: SaveDataRequest):
-    conn = sqlite3.connect("leid.db")
+    conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
-    
     finance_json = json.dumps([item.dict() for item in req.financial_items], ensure_ascii=False)
     events_json = json.dumps([item.dict() for item in req.events], ensure_ascii=False)
     
-    # 기존 저장 내역 확인 후 덮어쓰기/신규 생성
     cursor.execute("SELECT id FROM financial_data WHERE user_id = ?", (req.user_id,))
     record = cursor.fetchone()
-    
     if record:
         cursor.execute("""
             UPDATE financial_data 
@@ -169,32 +139,17 @@ def save_data(req: SaveDataRequest):
             INSERT INTO financial_data (user_id, finance_json, events_json)
             VALUES (?, ?, ?)
         """, (req.user_id, finance_json, events_json))
-        
     conn.commit()
     conn.close()
     return {"message": "데이터가 성공적으로 저장되었습니다."}
-# 4. 금융 데이터 불러오기 API (새로 추가할 부분!)
+
 @app.get("/api/data/load")
 def load_data(user_id: int):
-    conn = sqlite3.connect("leid.db")
+    conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
-    
-    # 전달받은 user_id와 일치하는 사람의 데이터만 쏙 뽑아옵니다.
-    cursor.execute("""
-        SELECT finance_json, events_json FROM financial_data 
-        WHERE user_id = ?
-    """, (user_id,))
-    
+    cursor.execute("SELECT finance_json, events_json FROM financial_data WHERE user_id = ?", (user_id,))
     record = cursor.fetchone()
     conn.close()
-    
-    # 저장된 데이터가 없는 경우 (처음 가입한 유저 등)
     if not record:
         return {"message": "저장된 데이터가 없습니다.", "financial_items": [], "events": []}
-        
-    # 데이터가 있으면 JSON 형태로 풀어서 전달합니다.
-    return {
-        "message": "데이터 불러오기 성공",
-        "financial_items": json.loads(record[0]),
-        "events": json.loads(record[1])
-    }
+    return {"message": "데이터 불러오기 성공", "financial_items": json.loads(record[0]), "events": json.loads(record[1])}

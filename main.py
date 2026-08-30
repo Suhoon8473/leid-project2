@@ -4,6 +4,7 @@ from pydantic import BaseModel
 from typing import List, Optional
 import sqlite3
 import json
+import requests
 
 app = FastAPI(title="Leið Backend Server")
 
@@ -74,6 +75,9 @@ class SaveDataRequest(BaseModel):
     user_id: int
     financial_items: Optional[List[FinancialItem]] = []
     events: Optional[List[EventItem]] = []
+class AnalysisRequest(BaseModel):
+    user_id: int
+    summary_data: dict
 
 @app.get("/api/auth/check-id")
 def check_id(login_id: str):
@@ -153,3 +157,43 @@ def load_data(user_id: int):
     if not record:
         return {"message": "저장된 데이터가 없습니다.", "financial_items": [], "events": []}
     return {"message": "데이터 불러오기 성공", "financial_items": json.loads(record[0]), "events": json.loads(record[1])}
+# 5. OpenCodex AI 분석 생성 API (새로 추가)
+@app.post("/api/analysis/generate")
+def generate_ai_analysis(req: AnalysisRequest):
+    # 1. AI에게 보낼 프롬프트 구성
+    prompt = f"""
+    당신은 전문 금융 자산 관리 AI 'Leið'입니다.
+    사용자의 재무 데이터 요약: {req.summary_data}
+    이 데이터를 바탕으로 다음 3가지 항목을 분석해 주세요. 
+    반드시 HTML 태그(<strong>, <br>)를 사용하여 가독성 있게 작성하세요.
+    1. [현재 금융 상태]
+    2. [주요 이벤트 진단]
+    3. [최종 제언]
+    """
+    
+    # 2. OpenCodex API 호출 설정 (실제 해커톤에서 제공받은 URL과 키로 변경하세요)
+    api_url = "https://api.opencodex.com/v1/chat/completions" # 예시 URL
+    headers = {
+        "Authorization": "Bearer 여기에_발급받은_API_키_입력", # 🚨 실제 키 입력
+        "Content-Type": "application/json"
+    }
+    payload = {
+        "model": "opencodex-model", # 🚨 실제 모델명 입력
+        "messages": [{"role": "user", "content": prompt}]
+    }
+    
+    try:
+        # OpenCodex로 요청 보내기
+        response = requests.post(api_url, headers=headers, json=payload)
+        response.raise_for_status() # 에러 발생 시 예외 처리
+        
+        # OpenCodex의 응답 텍스트 추출 (API 명세서에 따라 ['choices'][0] 등 구조가 다를 수 있음)
+        result_text = response.json().get("choices", [{}])[0].get("message", {}).get("content", "분석 결과를 불러올 수 없습니다.")
+        
+        return {"ai_analysis": result_text}
+        
+    except Exception as e:
+        print("AI 호출 에러:", e)
+        # API 연결 실패 시 예외 처리용 임시 텍스트
+        fallback_text = "<strong>[시스템 안내]</strong><br>현재 OpenCodex AI 서버와 통신할 수 없습니다. API 키 및 네트워크 상태를 확인해 주세요."
+        return {"ai_analysis": fallback_text}
